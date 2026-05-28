@@ -1,0 +1,221 @@
+TAVILY_SEARCH_URL = "https://api.tavily.com/search"
+TAVILY_SEARCH_LIMIT_PER_SESSION = 5
+
+SERVICE_COST_TERMS = [
+    "service cost",
+    "costing",
+    "cost",
+    "vendor",
+    "vendors",
+    "supplier",
+    "suppliers",
+    "quotation",
+    "rate",
+    "rates",
+    "packaging",
+    "sterilization",
+    "logistics",
+    "quality",
+    "warehousing",
+    "warehouse",
+    "shipment",
+    "medical device",
+    "healthcare equipment",
+    "inspection",
+    "audit",
+    "documentation",
+    "inventory",
+    "distributor",
+    "compare",
+    "comparison",
+    "best",
+    "better",
+    "cheapest",
+    "lowest",
+    "option",
+    "factor",
+    "factors",
+    "medical",
+    "supply",
+    "supplies",
+    "medical supply",
+    "medical supplies",
+    "healthcare",
+]
+
+WEB_SEARCH_TERMS = [
+    "near",
+    "near to",
+    "near me",
+    "nearby",
+    "around",
+    "top 5",
+    "find vendors",
+    "find vendor",
+    "search web",
+    "market rate",
+    "benchmark",
+    "reasonable",
+    "contact",
+    "phone",
+    "mobile",
+    "reliability",
+    "reliable",
+    "trusted",
+    "trustworthy",
+]
+
+SERVICE_EXPLAIN_TERMS = [
+    "what is",
+    "explain",
+    "understand",
+    "meaning",
+    "difference between",
+]
+
+SERVICE_CATEGORY_TERMS = [
+    "packaging",
+    "sterilization",
+    "logistics",
+    "quality",
+    "warehousing",
+    "warehouse",
+    "inspection",
+    "audit",
+    "documentation",
+    "medical device",
+    "healthcare equipment",
+    "shipment",
+    "medical",
+    "supply",
+    "supplies",
+    "medical supply",
+    "medical supplies",
+    "healthcare",
+]
+
+VENDOR_DISCOVERY_TERMS = [
+    "near",
+    "near to",
+    "near me",
+    "nearby",
+    "around",
+    "top 5",
+    "find vendors",
+    "find vendor",
+    "contact",
+    "phone",
+    "mobile",
+    "reliability",
+    "reliable",
+    "trusted",
+    "trustworthy",
+]
+
+STRUCTURED_ANSWER_TERMS = [
+    "available vendor",
+    "available vendors",
+    "vendor available",
+    "vendors available",
+    "all vendor",
+]
+
+VENDOR_SUPPLIER_TERMS = [
+    "vendor",
+    "vendors",
+    "supplier",
+    "suppliers",
+    "distributor",
+]
+
+SPECIFIC_RATE_TERMS = [
+    "packaging cost",
+    "sterilization cost",
+    "logistics cost",
+    "quality cost",
+    "warehousing cost",
+]
+
+AVAILABLE_VENDOR_TERMS = [
+    "available vendor",
+    "available vendors",
+    "list vendor",
+    "list vendors",
+]
+
+REASON_TERMS = [
+    "why",
+    "reason",
+]
+
+COMPARISON_FACTOR_TERMS = [
+    "factor",
+    "factors",
+    "consider",
+    "considered",
+]
+
+COMPARE_OPTION_TERMS = [
+    "compare",
+    "comparison",
+    "best",
+    "better",
+    "option",
+]
+
+BEST_CHEAPEST_TERMS = [
+    "better",
+    "best",
+    "cheapest",
+    "lowest",
+    "option",
+    "compare",
+    "comparison",
+]
+
+FOLLOW_UP_TERMS = [
+    "then",
+    "if changes",
+    "if change",
+    "when changes",
+    "when change",
+    "quantity",
+    "same",
+    "instead",
+    "but",
+    "also",
+    "with that",
+    "for this",
+    "for that",
+    "based on",
+    "follow up",
+    "what about",
+    "and also",
+]
+
+QUANTITY_CHANGE_TERMS = [
+    "quantity change",
+    "quantity changes",
+    "change quantity",
+    "changes to",
+    "change to",
+    "increase",
+    "decrease",
+    "more units",
+    "less units",
+    "different quantity",
+    "new quantity",
+    "other quantity",
+]
+
+BEST_FOR_QUANTITY_TERMS = [
+    "best for",
+    "best suited",
+    "best option",
+    "which vendor",
+    "who is best",
+    "who would be",
+    "recommended",
+    "cheapest for",
+    "lowest cost for",
+]

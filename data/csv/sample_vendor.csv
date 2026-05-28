@@ -1,0 +1,2 @@
+min_qty,max_qty,pouch_rate_per_unit,label_rate_per_unit,carton_rate_per_unit,sterilization_batch_cost,validation_cost,units_per_batch,transport_cost_per_shipment,handling_cost_per_shipment,distributor_fee_per_shipment,inspection_cost_per_shipment,audit_cost_per_shipment,documentation_cost_per_shipment,warehouse_rent_period,insurance_cost_period,inventory_handling_cost_period
+1,200,1.5,0.5,0.8,500,100,1000,1200,300,200,400,150,100,800,200,150

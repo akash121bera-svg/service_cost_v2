@@ -1,0 +1,59 @@
+flowchart TD
+    subgraph App[Streamlit App]
+      A1[Start Streamlit app] --> A2[Load .env and config]
+      A2 --> A3[Initialize session state]
+      A3 --> A4[Render UI inputs]
+      A4 --> A5[Wait for user uploads or chat]
+    end
+
+    subgraph Upload[File Upload & Parsing]
+      B1[User uploads CSV / PDF] --> B2{File type}
+      B2 -->|CSV| B3[Parse CSV with pandas]
+      B2 -->|PDF| B4[Extract text from PDF with fitz]
+      B3 --> B5[Create text chunks from rows]
+      B4 --> B5
+      B5 --> B6[Store uploaded chunks]
+      B3 --> B7[Preview CSV data in UI]
+    end
+
+    subgraph Cost[Cost Calculation]
+      C1[Quantity input / default quantity]
+      C2[Select shipment category]
+      C3[calculate_total_cost(row, quantity)]
+      C3 --> C4[Sum packaging + sterilization + logistics + quality + warehousing]
+      C2 --> C3
+      C1 --> C2
+      C3 --> C5[Show deterministic cost output]
+    end
+
+    subgraph Chat[RAG Chat Routing]
+      D1[User question submitted] --> D2{is_service_cost_question?}
+      D2 -->|No| D3[Reject or ask for service-cost topic]
+      D2 -->|Yes| D4{should_use_web_search?}
+      D4 -->|Yes| D5[validate_web_search_question()]
+      D5 -->|Valid| D6[Call Tavily web search]
+      D6 --> D7[Return web search answer]
+      D5 -->|Invalid| D8[Ask user to include category/location]
+      D4 -->|No| D9{should_use_structured_answer?}
+      D9 -->|Yes| D10[Deterministic answer from uploaded CSVs]
+      D10 --> D14[Response shown in UI]
+      D9 -->|No| D11[Retrieve uploaded context chunks]
+      D11 --> D12[build_gemini_rag_answer()]
+      D12 --> D14
+      D10 --> D12
+    end
+
+    subgraph Helpers[Back-end helpers]
+      H1[engine.category_selector] --> C2
+      H2[engine.costing_engine] --> C3
+      H3[engine.uploaded_costs] --> D10
+      H4[rag.pipeline] --> D11
+      H5[rag.vector_store / rag.embedding] --> D11
+    end
+
+    A5 --> B1
+    A5 --> D1
+    B6 --> D11
+    C5 --> D14
+    D7 --> D14
+    D14 --> A4

@@ -1,0 +1,17 @@
+# Python runtime used for this project: 3.12.7
+streamlit==1.57.0
+pandas==3.0.2
+numpy==2.4.4
+langchain==1.2.18
+langchain-community==0.4.1
+langchain-google-genai==4.2.2
+faiss-cpu==1.13.2
+sentence-transformers==5.4.1
+pymupdf==1.27.2.3
+python-dotenv==1.2.2
+requests==2.33.1
+fastapi==0.136.3
+python-multipart==0.0.29
+langchain-groq==1.1.2
+groq==0.37.1
+duckduckgo-search==8.1.1

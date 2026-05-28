@@ -1,0 +1,271 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1680" height="940" viewBox="0 0 1680 940" role="img" aria-labelledby="title desc">
+  <title id="title">Service Costing RAG App Flow</title>
+  <desc id="desc">Flow diagram for the Streamlit service costing RAG app, showing file upload, cost calculation, chat routing, local RAG, Gemini, Tavily web search, and chat history.</desc>
+  <defs>
+    <filter id="shadow" x="-12%" y="-12%" width="124%" height="124%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#10223f" flood-opacity="0.12"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="12" markerHeight="12" orient="auto-start-reverse">
+      <path d="M 0 0 L 12 6 L 0 12 z" fill="#111827"/>
+    </marker>
+    <linearGradient id="page" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#fbfdff"/>
+      <stop offset="100%" stop-color="#f7fbf6"/>
+    </linearGradient>
+    <linearGradient id="purple" x1="0" x2="1">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#5b21b6"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="0" x2="1">
+      <stop offset="0%" stop-color="#2f7de1"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="green" x1="0" x2="1">
+      <stop offset="0%" stop-color="#32a852"/>
+      <stop offset="100%" stop-color="#17803a"/>
+    </linearGradient>
+    <linearGradient id="amber" x1="0" x2="1">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+    <linearGradient id="teal" x1="0" x2="1">
+      <stop offset="0%" stop-color="#22c7b8"/>
+      <stop offset="100%" stop-color="#0f9f8f"/>
+    </linearGradient>
+    <style>
+      .bg { fill: url(#page); }
+      .title { font: 800 52px Arial, sans-serif; fill: #060b24; letter-spacing: 0; }
+      .label { font: 700 22px Arial, sans-serif; fill: #0f172a; letter-spacing: 0; }
+      .small { font: 16px Arial, sans-serif; fill: #111827; letter-spacing: 0; }
+      .tiny { font: 14px Arial, sans-serif; fill: #1f2937; letter-spacing: 0; }
+      .muted { fill: #475569; }
+      .card { stroke-width: 1.6; filter: url(#shadow); }
+      .purple-card { fill: #fbf7ff; stroke: #a78bfa; }
+      .blue-card { fill: #f4f8ff; stroke: #8bb9ff; }
+      .green-card { fill: #f6fff4; stroke: #9ed092; }
+      .amber-card { fill: #fffaf0; stroke: #f7c66e; }
+      .teal-card { fill: #effffb; stroke: #7ddbd4; }
+      .section { fill: rgba(255,255,255,0.76); stroke: #b6c4d5; stroke-width: 1.5; }
+      .dash { fill: #fbf8ff; stroke: #a78bfa; stroke-width: 2; stroke-dasharray: 9 8; }
+      .arrow { stroke: #111827; stroke-width: 2.4; fill: none; marker-end: url(#arrow); }
+      .thin-arrow { stroke: #111827; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+      .icon-text { font: 700 48px Arial, sans-serif; fill: white; text-anchor: middle; dominant-baseline: middle; }
+      .check { fill: #27a545; font: 700 19px Arial, sans-serif; text-anchor: middle; dominant-baseline: middle; }
+      .bullet { font: 16px Arial, sans-serif; fill: #111827; letter-spacing: 0; }
+      .legend { font: 15px Arial, sans-serif; fill: #111827; }
+    </style>
+  </defs>
+
+  <rect x="8" y="8" width="1664" height="924" rx="18" class="bg" stroke="#aeb9c8" stroke-width="1.4"/>
+  <text x="840" y="64" text-anchor="middle" class="title">Service Costing RAG App Flow</text>
+
+  <!-- Top file and costing flow -->
+  <g transform="translate(42 106)">
+    <!-- User icon -->
+    <circle cx="66" cy="46" r="18" fill="url(#purple)"/>
+    <path d="M33 104 C36 71 96 71 99 104 Z" fill="url(#purple)"/>
+    <text x="66" y="134" text-anchor="middle" class="label">User</text>
+
+    <line x1="118" y1="76" x2="178" y2="76" class="arrow"/>
+
+    <rect x="188" y="0" width="288" height="208" rx="14" class="card purple-card"/>
+    <rect x="222" y="38" width="102" height="68" rx="12" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="7 6"/>
+    <circle cx="273" cy="72" r="22" fill="url(#purple)"/>
+    <path d="M273 85 L273 63 M263 72 L273 62 L283 72" stroke="white" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M372 28 h40 l28 28 v76 h-68 z" fill="url(#purple)"/>
+    <path d="M412 28 v28 h28" fill="none" stroke="white" stroke-width="4"/>
+    <path d="M390 70 h28 M390 88 h34 M390 106 h22" stroke="white" stroke-width="4" stroke-linecap="round"/>
+    <text x="332" y="135" text-anchor="middle" class="label">Upload Rate Cards</text>
+    <text x="332" y="163" text-anchor="middle" class="small">CSV / PDF</text>
+    <text x="332" y="186" text-anchor="middle" class="small">(one or more files)</text>
+
+    <line x1="486" y1="76" x2="548" y2="76" class="arrow"/>
+
+    <rect x="560" y="0" width="286" height="208" rx="14" class="card blue-card"/>
+    <rect x="596" y="42" width="78" height="72" rx="8" fill="url(#blue)"/>
+    <path d="M614 42 v72 M635 42 v72 M656 42 v72 M596 62 h78 M596 86 h78" stroke="white" stroke-width="6"/>
+    <text x="702" y="68" class="label">Parser &amp; Preview</text>
+    <text x="702" y="98" class="small">Read CSVs with pandas</text>
+    <text x="702" y="122" class="small">Extract PDF text with PyMuPDF</text>
+    <text x="702" y="146" class="small">Show upload previews</text>
+
+    <line x1="856" y1="76" x2="918" y2="76" class="arrow"/>
+
+    <rect x="930" y="0" width="316" height="208" rx="14" class="card green-card"/>
+    <rect x="976" y="42" width="58" height="72" rx="8" fill="url(#green)"/>
+    <rect x="988" y="54" width="34" height="16" rx="3" fill="white"/>
+    <circle cx="992" cy="84" r="5" fill="white"/>
+    <circle cx="1010" cy="84" r="5" fill="white"/>
+    <circle cx="1028" cy="84" r="5" fill="white"/>
+    <circle cx="992" cy="102" r="5" fill="white"/>
+    <circle cx="1010" cy="102" r="5" fill="white"/>
+    <circle cx="1028" cy="102" r="5" fill="white"/>
+    <text x="1066" y="68" class="label">Costing Engine</text>
+    <text x="1066" y="98" class="small">Select shipment category</text>
+    <text x="1066" y="122" class="small">Apply service factor rates</text>
+    <text x="1066" y="146" class="small">Calculate total cost</text>
+
+    <line x1="1256" y1="76" x2="1318" y2="76" class="arrow"/>
+
+    <rect x="1330" y="0" width="244" height="208" rx="14" class="card green-card"/>
+    <circle cx="1405" cy="60" r="32" fill="none" stroke="#22933f" stroke-width="7"/>
+    <text x="1405" y="75" text-anchor="middle" font-family="Arial, sans-serif" font-size="54" font-weight="800" fill="#22933f">₹</text>
+    <rect x="1456" y="85" width="11" height="30" fill="#22933f"/>
+    <rect x="1478" y="66" width="11" height="49" fill="#22933f"/>
+    <rect x="1500" y="46" width="11" height="69" fill="#22933f"/>
+    <text x="1452" y="130" text-anchor="middle" class="label">Cost Results</text>
+    <text x="1452" y="158" text-anchor="middle" class="small">Vendor-wise service cost</text>
+    <text x="1452" y="181" text-anchor="middle" class="small">Displayed in Streamlit</text>
+  </g>
+
+  <!-- Connector from upload/parser path to chat router -->
+  <path d="M1532 294 H1594 Q1606 294 1606 306 V330 Q1606 342 1594 342 H694 Q682 342 682 354 V446" class="thin-arrow"/>
+
+  <!-- Chat and RAG section -->
+  <rect x="24" y="358" width="1632" height="444" rx="18" class="section"/>
+
+  <g transform="translate(54 390)">
+    <rect x="0" y="0" width="236" height="380" rx="14" class="card purple-card"/>
+    <circle cx="92" cy="58" r="18" fill="url(#purple)"/>
+    <path d="M60 112 C63 82 121 82 124 112 Z" fill="url(#purple)"/>
+    <path d="M136 44 h64 a22 22 0 0 1 0 44 h-23 l-27 23 v-23 h-14 a22 22 0 0 1 0 -44 z" fill="url(#purple)"/>
+    <circle cx="157" cy="66" r="4" fill="white"/>
+    <circle cx="176" cy="66" r="4" fill="white"/>
+    <circle cx="195" cy="66" r="4" fill="white"/>
+    <text x="118" y="145" text-anchor="middle" class="label">RAG Chat</text>
+    <text x="118" y="173" text-anchor="middle" class="small">User asks about service</text>
+    <text x="118" y="195" text-anchor="middle" class="small">costs, vendors, or rates</text>
+    <rect x="16" y="222" width="204" height="136" rx="13" fill="#f8f3ff" stroke="#c4b5fd" stroke-width="1.5"/>
+    <text x="34" y="248" class="tiny" font-weight="700">Examples</text>
+    <text x="34" y="274" class="bullet">• Best option for 100 units?</text>
+    <text x="34" y="298" class="bullet">• Packaging rate for vendor?</text>
+    <text x="34" y="322" class="bullet">• Find nearby suppliers</text>
+    <text x="34" y="346" class="bullet">• Explain sterilization cost</text>
+  </g>
+
+  <line x1="304" y1="580" x2="364" y2="580" class="arrow"/>
+
+  <g transform="translate(376 390)">
+    <rect x="0" y="0" width="220" height="380" rx="14" class="card amber-card"/>
+    <path d="M110 25 l48 22 v48 c0 46-30 76-48 84 c-18-8-48-38-48-84 V47 z" fill="#f97316"/>
+    <path d="M88 86 l17 17 l36-44" fill="none" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="110" y="145" text-anchor="middle" class="label">Guardrails</text>
+    <circle cx="22" cy="185" r="10" fill="#27a545"/><text x="22" y="188" class="check">✓</text>
+    <text x="42" y="190" class="small">Service-cost topics only</text>
+    <circle cx="22" cy="235" r="10" fill="#27a545"/><text x="22" y="238" class="check">✓</text>
+    <text x="42" y="228" class="small">Location required for</text>
+    <text x="42" y="250" class="small">vendor web search</text>
+    <circle cx="22" cy="285" r="10" fill="#27a545"/><text x="22" y="288" class="check">✓</text>
+    <text x="42" y="278" class="small">Service category or</text>
+    <text x="42" y="300" class="small">vendor term required</text>
+    <circle cx="22" cy="334" r="10" fill="#27a545"/><text x="22" y="337" class="check">✓</text>
+    <text x="42" y="328" class="small">Tavily session limit:</text>
+    <text x="42" y="350" class="small">5 searches/session</text>
+  </g>
+
+  <line x1="608" y1="580" x2="668" y2="580" class="arrow"/>
+
+  <g transform="translate(682 456)">
+    <rect x="0" y="0" width="158" height="218" rx="14" class="card purple-card"/>
+    <path d="M80 32 v152 M46 60 h54 l22 22 l-22 22 H46 M46 122 h54 l22 22 l-22 22 H46" fill="none" stroke="#6d28d9" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="79" y="152" text-anchor="middle" class="label">Router</text>
+    <text x="79" y="182" text-anchor="middle" class="small">Structured CSV</text>
+    <text x="79" y="204" text-anchor="middle" class="small">RAG or web</text>
+  </g>
+
+  <path d="M840 532 H880 Q894 532 894 518 V464 Q894 450 908 450 H958" class="arrow"/>
+  <path d="M840 610 H880 Q894 610 894 624 V696 Q894 710 908 710 H958" class="arrow"/>
+
+  <g transform="translate(968 382)">
+    <rect x="0" y="0" width="274" height="198" rx="14" class="card blue-card"/>
+    <ellipse cx="44" cy="42" rx="24" ry="12" fill="url(#blue)"/>
+    <path d="M20 42 v48 c0 7 11 12 24 12s24-5 24-12 V42" fill="url(#blue)"/>
+    <path d="M20 62 c0 7 11 12 24 12s24-5 24-12 M20 82 c0 7 11 12 24 12s24-5 24-12" fill="none" stroke="white" stroke-width="2"/>
+    <text x="86" y="34" class="label">Local CSV RAG</text>
+    <text x="86" y="62" class="small">Use uploaded files for</text>
+    <text x="86" y="84" class="small">structured answers</text>
+    <line x1="20" y1="110" x2="254" y2="110" stroke="#8bb9ff" stroke-width="2" stroke-dasharray="8 7"/>
+    <text x="34" y="136" class="bullet">• Vendor lists and matches</text>
+    <text x="34" y="160" class="bullet">• Best / cheapest comparison</text>
+    <text x="34" y="184" class="bullet">• Factor-wise rate answers</text>
+  </g>
+
+  <line x1="1250" y1="480" x2="1312" y2="480" class="arrow"/>
+
+  <g transform="translate(1324 386)">
+    <rect x="0" y="0" width="266" height="186" rx="14" class="card blue-card"/>
+    <path d="M66 42 a34 34 0 0 0-18 63 v18 h36 v-18 a34 34 0 0 0-18-63 z" fill="none" stroke="#2f7de1" stroke-width="6"/>
+    <path d="M54 137 h24 M58 151 h16 M66 16 v16 M32 30 l12 12 M100 30 l-12 12 M20 72 h16 M96 72 h16" stroke="#2f7de1" stroke-width="4" stroke-linecap="round"/>
+    <text x="118" y="64" class="label">Gemini Answer</text>
+    <text x="118" y="94" class="small">Grounded in retrieved</text>
+    <text x="118" y="116" class="small">uploaded-file context</text>
+    <text x="118" y="146" class="small">Tables when rows exist</text>
+  </g>
+
+  <g transform="translate(968 600)">
+    <rect x="0" y="0" width="274" height="174" rx="14" class="card amber-card"/>
+    <circle cx="44" cy="46" r="30" fill="none" stroke="#d97706" stroke-width="6"/>
+    <path d="M14 46 h60 M44 16 c-18 18-18 42 0 60 M44 16 c18 18 18 42 0 60 M63 66 l24 24" stroke="#d97706" stroke-width="5" stroke-linecap="round"/>
+    <text x="86" y="34" class="label">Tavily Web Search</text>
+    <text x="86" y="62" class="small">Only for live vendor</text>
+    <text x="86" y="84" class="small">discovery and benchmarks</text>
+    <line x1="20" y1="104" x2="254" y2="104" stroke="#f7c66e" stroke-width="2" stroke-dasharray="8 7"/>
+    <text x="34" y="130" class="bullet">• Nearby suppliers</text>
+    <text x="34" y="154" class="bullet">• Contacts, reliability notes</text>
+  </g>
+
+  <line x1="1250" y1="686" x2="1312" y2="686" class="arrow"/>
+
+  <g transform="translate(1324 610)">
+    <rect x="0" y="0" width="266" height="154" rx="14" class="card amber-card"/>
+    <circle cx="42" cy="42" r="28" fill="none" stroke="#d97706" stroke-width="6"/>
+    <path d="M14 42 h56 M42 14 c-17 17-17 39 0 56 M42 14 c17 17 17 39 0 56 M60 60 l22 22" stroke="#d97706" stroke-width="5" stroke-linecap="round"/>
+    <text x="94" y="38" class="label">Web Results</text>
+    <text x="94" y="68" class="small">Title, URL, snippet</text>
+    <text x="94" y="92" class="small">Contact numbers if found</text>
+    <text x="94" y="116" class="small">Reliability guidance</text>
+  </g>
+
+  <path d="M1596 480 H1622 Q1634 480 1634 492 V576 Q1634 588 1622 588 H1602" class="arrow"/>
+  <path d="M1596 686 H1622 Q1634 686 1634 674 V612 Q1634 600 1622 600 H1602" class="arrow"/>
+
+  <g transform="translate(1468 444)">
+    <rect x="0" y="0" width="156" height="330" rx="14" class="card teal-card"/>
+    <path d="M48 38 h64 a28 28 0 0 1 0 56 h-26 l-35 28 v-28 h-3 a28 28 0 0 1 0-56 z" fill="url(#teal)"/>
+    <circle cx="72" cy="66" r="5" fill="white"/>
+    <circle cx="92" cy="66" r="5" fill="white"/>
+    <circle cx="112" cy="66" r="5" fill="white"/>
+    <text x="78" y="142" text-anchor="middle" class="label">Chat History</text>
+    <text x="78" y="174" text-anchor="middle" class="small">All Q&amp;A saved</text>
+    <text x="78" y="198" text-anchor="middle" class="small">in session state</text>
+    <circle cx="78" cy="250" r="22" fill="none" stroke="#0f9f8f" stroke-width="5"/>
+    <path d="M78 236 v16 l12 8" stroke="#0f9f8f" stroke-width="5" stroke-linecap="round"/>
+    <text x="78" y="294" text-anchor="middle" class="small">Supports follow-up</text>
+    <text x="78" y="318" text-anchor="middle" class="small">answers like “why?”</text>
+  </g>
+
+  <!-- Privacy and legend -->
+  <g transform="translate(28 824)">
+    <rect x="0" y="0" width="566" height="92" rx="12" class="dash"/>
+    <path d="M34 48 h58 v40 h-58 z" fill="url(#purple)"/>
+    <path d="M48 48 v-18 a15 15 0 0 1 30 0 v18" fill="none" stroke="#6d28d9" stroke-width="8"/>
+    <circle cx="63" cy="69" r="5" fill="white"/>
+    <text x="116" y="34" class="label" fill="#312e81">Privacy &amp; Data Safety</text>
+    <text x="116" y="60" class="small">Uploaded private CSV/PDF data is not sent to Tavily.</text>
+    <text x="116" y="82" class="small">Web search uses the user question and scoped service terms only.</text>
+  </g>
+
+  <g transform="translate(628 840)">
+    <rect x="0" y="0" width="1026" height="60" rx="14" fill="#ffffff" stroke="#b6c4d5" stroke-width="1.4"/>
+    <rect x="24" y="18" width="24" height="24" rx="4" fill="url(#purple)"/>
+    <text x="60" y="36" class="legend">Input</text>
+    <rect x="142" y="18" width="24" height="24" rx="4" fill="url(#blue)"/>
+    <text x="178" y="36" class="legend">Data Processing</text>
+    <rect x="332" y="18" width="24" height="24" rx="4" fill="url(#green)"/>
+    <text x="368" y="36" class="legend">Computation</text>
+    <rect x="510" y="18" width="24" height="24" rx="4" fill="url(#amber)"/>
+    <text x="546" y="36" class="legend">Guardrails / Web</text>
+    <rect x="740" y="18" width="24" height="24" rx="4" fill="url(#teal)"/>
+    <text x="776" y="36" class="legend">Chat / Session</text>
+  </g>
+</svg>

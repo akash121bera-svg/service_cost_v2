@@ -1,0 +1,241 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="1050" viewBox="0 0 1700 1050" role="img" aria-labelledby="title desc">
+  <title id="title">Service Costing RAG Technology Flow</title>
+  <desc id="desc">Technology architecture flow for the Service Costing RAG app showing frontend, environment, parsing, costing, embeddings, vector search, Gemini, Tavily, and Streamlit output layers.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#111827"/>
+    </marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#0f172a" flood-opacity="0.13"/>
+    </filter>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#fbfdff"/>
+      <stop offset="100%" stop-color="#f6fbf8"/>
+    </linearGradient>
+    <linearGradient id="purple" x1="0" x2="1">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#5b21b6"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="0" x2="1">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="green" x1="0" x2="1">
+      <stop offset="0%" stop-color="#22c55e"/>
+      <stop offset="100%" stop-color="#15803d"/>
+    </linearGradient>
+    <linearGradient id="amber" x1="0" x2="1">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+    <linearGradient id="teal" x1="0" x2="1">
+      <stop offset="0%" stop-color="#14b8a6"/>
+      <stop offset="100%" stop-color="#0f766e"/>
+    </linearGradient>
+    <style>
+      .page { fill: url(#bg); stroke: #b8c4d4; stroke-width: 1.5; }
+      .title { font: 800 50px Arial, sans-serif; fill: #061026; letter-spacing: 0; }
+      .subtitle { font: 18px Arial, sans-serif; fill: #475569; letter-spacing: 0; }
+      .band { fill: rgba(255,255,255,0.78); stroke: #c4cfdd; stroke-width: 1.5; }
+      .band-title { font: 800 22px Arial, sans-serif; fill: #0f172a; letter-spacing: 0; }
+      .card { filter: url(#shadow); stroke-width: 1.5; }
+      .ui { fill: #f8f4ff; stroke: #a78bfa; }
+      .data { fill: #f3f8ff; stroke: #93c5fd; }
+      .compute { fill: #f2fff6; stroke: #86efac; }
+      .ai { fill: #effffb; stroke: #5eead4; }
+      .web { fill: #fff8ed; stroke: #f59e0b; }
+      .safe { fill: #fff1f2; stroke: #fb7185; }
+      .head { font: 800 22px Arial, sans-serif; fill: #0f172a; letter-spacing: 0; }
+      .text { font: 16px Arial, sans-serif; fill: #1f2937; letter-spacing: 0; }
+      .small { font: 14px Arial, sans-serif; fill: #334155; letter-spacing: 0; }
+      .code { font: 14px Consolas, monospace; fill: #334155; }
+      .arrow { stroke: #111827; stroke-width: 2.3; fill: none; marker-end: url(#arrow); }
+      .dash { stroke: #111827; stroke-width: 2; fill: none; stroke-dasharray: 8 7; marker-end: url(#arrow); }
+      .label { font: 700 13px Arial, sans-serif; fill: #1e293b; letter-spacing: 0; }
+      .icon { font: 800 26px Arial, sans-serif; fill: white; text-anchor: middle; dominant-baseline: middle; }
+      .pill { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.2; }
+      .legend { font: 15px Arial, sans-serif; fill: #111827; }
+    </style>
+  </defs>
+
+  <rect x="10" y="10" width="1680" height="1030" rx="20" class="page"/>
+  <text x="850" y="62" text-anchor="middle" class="title">Service Costing RAG Technology Flow</text>
+  <text x="850" y="94" text-anchor="middle" class="subtitle">How the Streamlit app uses Python libraries, local RAG components, Gemini, and Tavily</text>
+
+  <!-- Main bands -->
+  <rect x="34" y="122" width="1632" height="210" rx="16" class="band"/>
+  <text x="62" y="156" class="band-title">User Interface + Configuration</text>
+  <rect x="34" y="356" width="1632" height="260" rx="16" class="band"/>
+  <text x="62" y="390" class="band-title">Uploaded Data Processing + Costing</text>
+  <rect x="34" y="640" width="1632" height="284" rx="16" class="band"/>
+  <text x="62" y="674" class="band-title">RAG, AI, Web Search + Output</text>
+  <rect x="34" y="946" width="1632" height="62" rx="16" class="band"/>
+
+  <!-- UI/config -->
+  <g transform="translate(82 186)">
+    <rect x="0" y="0" width="240" height="104" rx="14" class="card ui"/>
+    <circle cx="46" cy="52" r="30" fill="url(#purple)"/>
+    <text x="46" y="54" class="icon">UI</text>
+    <text x="92" y="35" class="head">Streamlit</text>
+    <text x="92" y="63" class="text">file uploader, chat input</text>
+    <text x="92" y="85" class="text">dataframe tables, messages</text>
+  </g>
+  <line x1="334" y1="238" x2="408" y2="238" class="arrow"/>
+
+  <g transform="translate(420 186)">
+    <rect x="0" y="0" width="252" height="104" rx="14" class="card ui"/>
+    <circle cx="48" cy="52" r="30" fill="url(#purple)"/>
+    <text x="48" y="54" class="icon">SS</text>
+    <text x="96" y="35" class="head">Session State</text>
+    <text x="96" y="63" class="code">chat_history</text>
+    <text x="96" y="85" class="code">tavily_search_count</text>
+  </g>
+  <line x1="684" y1="238" x2="758" y2="238" class="arrow"/>
+
+  <g transform="translate(770 186)">
+    <rect x="0" y="0" width="260" height="104" rx="14" class="card safe"/>
+    <circle cx="48" cy="52" r="30" fill="#fb7185"/>
+    <text x="48" y="54" class="icon">ENV</text>
+    <text x="96" y="35" class="head">python-dotenv</text>
+    <text x="96" y="63" class="text">loads API keys from</text>
+    <text x="96" y="85" class="code">.env</text>
+  </g>
+  <line x1="1042" y1="238" x2="1116" y2="238" class="arrow"/>
+
+  <g transform="translate(1128 186)">
+    <rect x="0" y="0" width="428" height="104" rx="14" class="card safe"/>
+    <text x="26" y="36" class="head">Config Variables</text>
+    <text x="26" y="65" class="code">GOOGLE_API_KEY, GEMINI_MODEL</text>
+    <text x="26" y="87" class="code">TAVILY_API_KEY</text>
+    <text x="272" y="65" class="text">used only when needed</text>
+    <text x="272" y="87" class="text">for Gemini or Tavily</text>
+  </g>
+
+  <!-- Data processing/costing -->
+  <g transform="translate(74 434)">
+    <rect x="0" y="0" width="228" height="122" rx="14" class="card data"/>
+    <circle cx="46" cy="58" r="30" fill="url(#blue)"/>
+    <text x="46" y="60" class="icon">CSV</text>
+    <text x="92" y="36" class="head">pandas</text>
+    <text x="92" y="64" class="code">pd.read_csv()</text>
+    <text x="92" y="88" class="text">preview tables</text>
+    <text x="92" y="110" class="text">row-wise chunks</text>
+  </g>
+  <line x1="314" y1="495" x2="386" y2="495" class="arrow"/>
+
+  <g transform="translate(398 434)">
+    <rect x="0" y="0" width="244" height="122" rx="14" class="card data"/>
+    <circle cx="46" cy="58" r="30" fill="url(#blue)"/>
+    <text x="46" y="60" class="icon">PDF</text>
+    <text x="92" y="36" class="head">PyMuPDF</text>
+    <text x="92" y="64" class="code">fitz.open()</text>
+    <text x="92" y="88" class="text">extract page text</text>
+    <text x="92" y="110" class="text">chunk by overlap</text>
+  </g>
+  <line x1="654" y1="495" x2="726" y2="495" class="arrow"/>
+
+  <g transform="translate(738 434)">
+    <rect x="0" y="0" width="272" height="122" rx="14" class="card compute"/>
+    <circle cx="48" cy="58" r="30" fill="url(#green)"/>
+    <text x="48" y="60" class="icon">₹</text>
+    <text x="98" y="36" class="head">Costing Engine</text>
+    <text x="98" y="64" class="code">get_shipment_category()</text>
+    <text x="98" y="88" class="code">calculate_total_cost()</text>
+    <text x="98" y="110" class="text">factor-specific modules</text>
+  </g>
+  <line x1="1022" y1="495" x2="1094" y2="495" class="arrow"/>
+
+  <g transform="translate(1106 434)">
+    <rect x="0" y="0" width="476" height="122" rx="14" class="card compute"/>
+    <text x="28" y="36" class="head">Service Factor Modules</text>
+    <text x="28" y="66" class="text">packaging, sterilization, logistics, quality, warehousing</text>
+    <text x="28" y="92" class="text">simple rate columns or detailed factor formulas</text>
+    <text x="28" y="114" class="code">factors/*/*.py</text>
+  </g>
+
+  <!-- RAG / AI -->
+  <g transform="translate(74 718)">
+    <rect x="0" y="0" width="250" height="134" rx="14" class="card ai"/>
+    <circle cx="48" cy="64" r="30" fill="url(#teal)"/>
+    <text x="48" y="66" class="icon">EM</text>
+    <text x="98" y="36" class="head">Embeddings</text>
+    <text x="98" y="64" class="code">SentenceTransformer</text>
+    <text x="98" y="88" class="text">local embedding model</text>
+    <text x="98" y="112" class="text">cached in .model_cache</text>
+  </g>
+  <line x1="336" y1="785" x2="408" y2="785" class="arrow"/>
+
+  <g transform="translate(420 718)">
+    <rect x="0" y="0" width="240" height="134" rx="14" class="card ai"/>
+    <circle cx="48" cy="64" r="30" fill="url(#teal)"/>
+    <text x="48" y="66" class="icon">VS</text>
+    <text x="98" y="36" class="head">FAISS</text>
+    <text x="98" y="64" class="code">IndexFlatL2</text>
+    <text x="98" y="88" class="text">top-k retrieval</text>
+    <text x="98" y="112" class="text">uploaded chunks only</text>
+  </g>
+  <line x1="672" y1="785" x2="744" y2="785" class="arrow"/>
+
+  <g transform="translate(756 718)">
+    <rect x="0" y="0" width="252" height="134" rx="14" class="card ai"/>
+    <circle cx="48" cy="64" r="30" fill="url(#teal)"/>
+    <text x="48" y="66" class="icon">AI</text>
+    <text x="98" y="36" class="head">Gemini</text>
+    <text x="98" y="64" class="code">google-generativeai</text>
+    <text x="98" y="88" class="text">grounded RAG answer</text>
+    <text x="98" y="112" class="text">uses retrieved context</text>
+  </g>
+  <line x1="1020" y1="785" x2="1092" y2="785" class="arrow"/>
+
+  <g transform="translate(1104 718)">
+    <rect x="0" y="0" width="236" height="134" rx="14" class="card web"/>
+    <circle cx="48" cy="64" r="30" fill="url(#amber)"/>
+    <text x="48" y="66" class="icon">WEB</text>
+    <text x="98" y="36" class="head">Tavily API</text>
+    <text x="98" y="64" class="code">requests.post()</text>
+    <text x="98" y="88" class="text">vendor discovery</text>
+    <text x="98" y="112" class="text">benchmarks, contacts</text>
+  </g>
+  <line x1="1352" y1="785" x2="1424" y2="785" class="arrow"/>
+
+  <g transform="translate(1436 718)">
+    <rect x="0" y="0" width="178" height="134" rx="14" class="card ui"/>
+    <circle cx="48" cy="64" r="30" fill="url(#purple)"/>
+    <text x="48" y="66" class="icon">OUT</text>
+    <text x="98" y="36" class="head">Output</text>
+    <text x="98" y="64" class="text">answer text</text>
+    <text x="98" y="88" class="text">tables</text>
+    <text x="98" y="112" class="text">chat history</text>
+  </g>
+
+  <!-- Branch notes -->
+  <path d="M854 556 V640" class="dash"/>
+  <text x="870" y="604" class="label">CSV rows also become RAG chunks</text>
+  <path d="M520 556 V640" class="dash"/>
+  <text x="538" y="604" class="label">PDF text goes to RAG only</text>
+  <path d="M1208 290 V356" class="dash"/>
+  <text x="1224" y="330" class="label">API keys read from .env</text>
+  <path d="M1222 718 V662 H1008" class="dash"/>
+  <text x="1026" y="658" class="label">web branch is used only for live vendor/location questions</text>
+
+  <!-- Safety strip -->
+  <g transform="translate(64 964)">
+    <rect x="0" y="0" width="1524" height="26" rx="13" class="pill"/>
+    <text x="22" y="19" class="small">Local path: uploads are parsed, embedded, indexed, and costed in the app. External path: Gemini receives selected context for RAG answers; Tavily receives scoped web-search queries only.</text>
+  </g>
+
+  <!-- Legend -->
+  <g transform="translate(1114 136)">
+    <rect x="0" y="0" width="492" height="36" rx="18" class="pill"/>
+    <rect x="18" y="10" width="16" height="16" rx="3" fill="url(#purple)"/>
+    <text x="42" y="23" class="legend">UI</text>
+    <rect x="86" y="10" width="16" height="16" rx="3" fill="url(#blue)"/>
+    <text x="110" y="23" class="legend">Parsing</text>
+    <rect x="180" y="10" width="16" height="16" rx="3" fill="url(#green)"/>
+    <text x="204" y="23" class="legend">Costing</text>
+    <rect x="286" y="10" width="16" height="16" rx="3" fill="url(#teal)"/>
+    <text x="310" y="23" class="legend">AI/RAG</text>
+    <rect x="382" y="10" width="16" height="16" rx="3" fill="url(#amber)"/>
+    <text x="406" y="23" class="legend">Web API</text>
+  </g>
+</svg>

@@ -1,0 +1,68 @@
+digraph ServiceCostingFlow {
+	fontsize=10 rankdir=TB
+	node [shape=box]
+	A1 [label="Start Streamlit app"]
+	A2 [label="Load .env and config"]
+	A3 [label="Initialize session state"]
+	A4 [label="Render UI inputs"]
+	A5 [label="Wait for user uploads or chat"]
+	B1 [label="User uploads CSV / PDF"]
+	B2 [label="File type?"]
+	B3 [label="Parse CSV with pandas"]
+	B4 [label="Extract text from PDF with fitz"]
+	B5 [label="Create text chunks from rows"]
+	B6 [label="Store uploaded chunks"]
+	B7 [label="Preview CSV data in UI"]
+	C1 [label="Quantity input / default quantity"]
+	C2 [label="Select shipment category"]
+	C3 [label="calculate_total_cost(row, quantity)"]
+	C4 [label="Sum packaging + sterilization + logistics + quality + warehousing"]
+	C5 [label="Show deterministic cost output"]
+	D1 [label="User question submitted"]
+	D2 [label="is_service_cost_question?"]
+	D3 [label="Reject or ask for service-cost topic"]
+	D4 [label="should_use_web_search?"]
+	D5 [label="validate_web_search_question()"]
+	D6 [label="Call Tavily web search"]
+	D7 [label="Return web search answer"]
+	D8 [label="Ask user to include category/location"]
+	D9 [label="should_use_structured_answer?"]
+	D10 [label="Deterministic answer from uploaded CSVs"]
+	D11 [label="Retrieve uploaded context chunks"]
+	D12 [label="build_gemini_rag_answer()"]
+	D14 [label="Response shown in UI"]
+	A1 -> A2
+	A2 -> A3
+	A3 -> A4
+	A4 -> A5
+	A5 -> B1
+	A5 -> D1
+	B1 -> B2
+	B2 -> B3 [label=CSV]
+	B2 -> B4 [label=PDF]
+	B3 -> B5
+	B4 -> B5
+	B5 -> B6
+	B3 -> B7
+	B6 -> D11
+	C1 -> C2
+	C2 -> C3
+	C3 -> C4
+	C3 -> C5
+	D1 -> D2
+	D2 -> D3 [label=No]
+	D2 -> D4 [label=Yes]
+	D4 -> D5 [label=Yes]
+	D5 -> D6 [label=Valid]
+	D6 -> D7
+	D7 -> D14
+	D5 -> D8 [label=Invalid]
+	D4 -> D9 [label=No]
+	D9 -> D10 [label=Yes]
+	D9 -> D11 [label=No]
+	D10 -> D12
+	D10 -> D14
+	D11 -> D12
+	D12 -> D14
+	D14 -> A4
+}
