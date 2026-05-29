@@ -102,7 +102,7 @@ flowchart TD
     
     subgraph S1["Stage 1: Context Gathering (Sequential)"]
         S1_1[MEM_LOAD: Retrieve Chat Continuity] --> S1_2[RAG_RETRIEVAL: Similarity search FAISS]
-        S1_2 --> S1_3[WEB_SEARCH: Tavily search & filter]
+        S1_2 --> S1_3[WEB_SEARCH: Prioritized B2B search -> General DDG -> Tavily fallback -> Parallel Scraper]
     end
     
     Step2 --> S1
@@ -136,7 +136,11 @@ flowchart TD
 #### Stage 1: Context Gathering (Sequential)
 - **MEM_LOAD** (`engine/memory.py`): Restores the conversation continuity rules.
 - **RAG_RETRIEVAL** (`rag/pipeline.py`): Executes similarity searches on vector embeddings of uploaded PDFs/CSVs.
-- **WEB_SEARCH** (`engine/search_enrichment.py`): Performs Tavily web searches to discover new vendors or benchmarks.
+- **WEB_SEARCH** (`engine/search_enrichment.py`): Performs a hybrid search:
+  * **Default (100% Free)**: Queries **DuckDuckGo Search** (using `duckduckgo-search` library) targeting verified vendor portals from `trusted_domains.json` first, then falls back to a general DuckDuckGo query if that yields no results.
+  * **API Fallback**: Gracefully falls back to **Tavily Search** if DuckDuckGo fails or returns zero results.
+  * **Parallel Web Scraping**: Concurrently scrapes the top matched vendor webpages in parallel using a thread pool. The raw HTML is processed into clean body text (excluding script tags, styles, and headers/footers) to extract rich pricing, certifications, and phone numbers.
+
 
 #### Stage 2: Core Analysis & Auditing (Concurrent Thread Pool)
 Runs parallel workloads via `ThreadPoolExecutor` to minimize processing latency:

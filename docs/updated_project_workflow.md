@@ -102,7 +102,7 @@ flowchart TD
     
     subgraph S1["Stage 1: Context Gathering (Sequential)"]
         S1_1[MEM_LOAD: Retrieve Chat Continuity] --> S1_2[RAG_RETRIEVAL: Similarity search FAISS]
-        S1_2 --> S1_3[WEB_SEARCH: DuckDuckGo search -> Tavily fallback]
+        S1_2 --> S1_3[WEB_SEARCH: Prioritized B2B search -> General DDG -> Tavily fallback -> Parallel Scraper]
     end
     
     Step2 --> S1
@@ -137,8 +137,10 @@ flowchart TD
 - **MEM_LOAD** (`engine/memory.py`): Restores the conversation continuity rules.
 - **RAG_RETRIEVAL** (`rag/pipeline.py`): Executes similarity searches on vector embeddings of uploaded PDFs/CSVs.
 - **WEB_SEARCH** (`engine/search_enrichment.py`): Performs a hybrid search:
-  * **Default (100% Free)**: Queries **DuckDuckGo Search** (using `duckduckgo-search` library). It targets verified vendor portals (`indiamart.com`, `tradeindia.com`, `alibaba.com`, etc.) without requiring any API keys.
-  * **Fallback**: If DuckDuckGo gets rate-limited (empty results) or raises an exception, the pipeline instantly and silently falls back to **Tavily Search** (if `TAVILY_API_KEY` is configured).
+  * **Default (100% Free)**: Queries **DuckDuckGo Search** (using `duckduckgo-search` library) targeting verified vendor portals from `trusted_domains.json` first. If that search yields zero results, it seamlessly falls back to a general DuckDuckGo query.
+  * **Fallback API**: If DuckDuckGo search gets rate-limited or fails, the pipeline instantly falls back to **Tavily Search** (if `TAVILY_API_KEY` is configured).
+  * **Parallel Web Scraping**: Concurrently scrapes the top matched vendor webpages in parallel using a thread pool. The raw HTML is processed into clean body text (excluding script tags, styles, and headers/footers) to extract rich pricing, certifications, and phone numbers.
+
 
 #### Stage 2: Core Analysis & Auditing (Concurrent Thread Pool)
 Runs parallel workloads via `ThreadPoolExecutor` to minimize processing latency:
