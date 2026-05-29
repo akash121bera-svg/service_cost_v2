@@ -266,47 +266,6 @@ def should_use_structured_answer(question: str) -> bool:
 
 
 # =============================================================================
-# SEARCH FUNCTIONS
-# =============================================================================
-
-def search_tavily(question: str, max_results: int = 5) -> list[dict]:
-    """Search Tavily API for relevant results."""
-    api_key = os.getenv("TAVILY_API_KEY")
-
-    if not api_key:
-        raise ValueError("Missing TAVILY_API_KEY in .env.")
-
-    tavily_search_count = st.session_state.get("tavily_search_count", 0)
-
-    if tavily_search_count >= TAVILY_SEARCH_LIMIT_PER_SESSION:
-        raise ValueError(
-            f"Tavily search limit reached for this session ({TAVILY_SEARCH_LIMIT_PER_SESSION})."
-        )
-
-    payload = {
-        "api_key": api_key,
-        "query": question,
-        "search_depth": "basic",
-        "max_results": max_results,
-    }
-    
-    # Apply domain restriction unless user explicitly forced manual web search
-    if not st.session_state.get("enable_web_search", False):
-        payload["include_domains"] = TRUSTED_DOMAINS
-
-    response = requests.post(
-        TAVILY_SEARCH_URL,
-        json=payload,
-        timeout=20,
-    )
-    response.raise_for_status()
-    st.session_state["tavily_search_count"] = tavily_search_count + 1
-
-    data = response.json()
-    return data.get("results", [])
-
-
-# =============================================================================
 # EXTRACTION FUNCTIONS
 # =============================================================================
 
@@ -449,47 +408,6 @@ def is_service_related_search_result(result: dict) -> bool:
 # =============================================================================
 # ANSWER BUILDING FUNCTIONS
 # =============================================================================
-
-def search_ddg(question: str, max_results: int = 5) -> list[dict]:
-    """Search DuckDuckGo API for relevant results."""
-    from duckduckgo_search import DDGS
-    
-    # Restrict to trusted domains unless manual override toggle is enabled
-    if not st.session_state.get("enable_web_search", False):
-        domain_query = " OR ".join(f"site:{domain}" for domain in TRUSTED_DOMAINS)
-        final_query = f"({domain_query}) {question}"
-    else:
-        final_query = question
-
-    hits = []
-    # 1. Try search restricted to trusted procurement/supplier portals
-    try:
-        with DDGS() as ddgs:
-            results = ddgs.text(final_query, max_results=max_results)
-            for item in results:
-                hits.append({
-                    "title": item.get("title", ""),
-                    "content": item.get("body", ""),
-                    "url": item.get("href", ""),
-                })
-    except Exception:
-        pass
-
-    # 2. Fallback to general query if restricted search returned zero results or failed
-    if not hits:
-        try:
-            with DDGS() as ddgs:
-                results = ddgs.text(question, max_results=max_results)
-                for item in results:
-                    hits.append({
-                        "title": item.get("title", ""),
-                        "content": item.get("body", ""),
-                        "url": item.get("href", ""),
-                    })
-        except Exception:
-            pass
-    return hits
-
 
 def build_web_answer(question: str) -> tuple[str, list[dict]]:
     """Build answer from web search results using DDG-first quality fallback."""
