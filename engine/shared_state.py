@@ -33,6 +33,7 @@ class SharedState:
         self.vendor_scores: List[Dict[str, Any]] = []
         self.compliance_results: Dict[str, Any] = {}
         self.web_search_results: List[Dict[str, Any]] = []
+        self.search_metadata: Dict[str, Any] = {}
         self.structured_response: Dict[str, Any] = {}
         
         # Context/Memory
@@ -102,6 +103,7 @@ class SharedState:
                 "vendor_scores": self.vendor_scores,
                 "compliance_results": self.compliance_results,
                 "web_search_results": self.web_search_results,
+                "search_metadata": self.search_metadata,
                 "structured_response": self.structured_response,
                 "memory_context": self.memory_context,
                 "execution_trace": self.execution_trace,
@@ -122,6 +124,7 @@ class SharedState:
             state.vendor_scores = data.get("vendor_scores", [])
             state.compliance_results = data.get("compliance_results", {})
             state.web_search_results = data.get("web_search_results", [])
+            state.search_metadata = data.get("search_metadata", {})
             state.structured_response = data.get("structured_response", {})
             state.memory_context = data.get("memory_context", {"chat_history": [], "last_best_option": None})
             state.execution_trace = data.get("execution_trace", [])
@@ -133,4 +136,3 @@ class SharedState:
                 "total_duration_ms": 0.0
             })
         return state
-

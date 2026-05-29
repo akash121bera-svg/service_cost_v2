@@ -293,6 +293,7 @@ def execute_orchestrator_workflow(
         "cost_breakdown": state.costing_results,
         "compliance_summary": state.compliance_results,
         "vendor_profiles": state.vendor_profiles,
+        "search_metadata": state.search_metadata,
         "metadata": state.execution_metadata,
         "errors": state.errors
     }

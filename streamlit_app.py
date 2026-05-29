@@ -43,6 +43,7 @@ from engine.semantic_costs import (
     is_detailed_audit_question,
 )
 from engine.query_planner import build_query_plan
+from engine.search_enrichment import vendor_search_with_fallback
 from rag.pipeline import (
     build_gemini_rag_answer,
     dataframe_to_chunks,
@@ -491,31 +492,19 @@ def search_ddg(question: str, max_results: int = 5) -> list[dict]:
 
 
 def build_web_answer(question: str) -> tuple[str, list[dict]]:
-    """Build answer from web search results, trying DuckDuckGo first and falling back to Tavily."""
+    """Build answer from web search results using DDG-first quality fallback."""
     search_query = build_service_vendor_search_query(question)
     location = extract_location_hint(question)
-    
-    # 1. Try DuckDuckGo first
-    engine_used = "DuckDuckGo"
-    try:
-        results = search_ddg(search_query)
-    except Exception:
-        results = []
 
-    # 2. Fallback to Tavily if DDG failed or returned zero results
-    if not results:
-        api_key = os.getenv("TAVILY_API_KEY")
-        if api_key:
-            try:
-                results = search_tavily(search_query)
-                engine_used = "Tavily"
-            except Exception as e:
-                return f"Both search engines failed. Tavily error: {str(e)}", []
-        else:
-            return "DuckDuckGo search returned no results and no TAVILY_API_KEY is configured for fallback.", []
+    try:
+        results, metadata = vendor_search_with_fallback(search_query)
+    except Exception as exc:
+        return f"Vendor web search failed: {str(exc)}", []
 
     if not results:
         return "I could not find relevant web results for that question.", []
+
+    engine_used = "DuckDuckGo" if metadata.get("source") == "duckduckgo" else "Tavily"
 
     table_rows = []
 
@@ -549,13 +538,19 @@ def build_web_answer(question: str) -> tuple[str, list[dict]]:
                 "url": result.get("url", ""),
                 "contact_numbers_found": extract_phone_numbers(result_text) or "Not found in search result",
                 "reliability": get_source_reliability(result),
-                "snippet": result.get("content", ""),
+                "snippet": result.get("content") or result.get("snippet", ""),
+                "search_metadata": {
+                    "source": metadata.get("source"),
+                    "fallback_used": metadata.get("fallback_used", False),
+                    "confidence": metadata.get("confidence", 0.0),
+                },
             }
         )
 
     answer = (
         f"Here are live {engine_used} results for that vendor/location request. Contact numbers are shown "
-        "only when they appear in the search result text. Verify each vendor directly before making a decision."
+        "only when they appear in the search result text. Verify each vendor directly before making a decision.\n\n"
+        f"Search metadata: {json.dumps({'source': metadata.get('source'), 'fallback_used': metadata.get('fallback_used', False), 'confidence': metadata.get('confidence', 0.0)})}"
     )
 
     return answer, table_rows
