@@ -4,7 +4,26 @@ import re
 import os
 import io
 import requests
+import json
 from typing import Optional
+
+def load_trusted_domains() -> list[str]:
+    """Load trusted B2B domains from configuration file."""
+    try:
+        config_path = os.path.join(os.path.dirname(__file__), "config", "trusted_domains.json")
+        with open(config_path, "r") as f:
+            data = json.load(f)
+            return data.get("trusted_domains", [])
+    except Exception:
+        return [
+            "indiamart.com",
+            "tradeindia.com",
+            "alibaba.com",
+            "medicalexpo.com",
+            "pharmacompass.com"
+        ]
+
+TRUSTED_DOMAINS = load_trusted_domains()
 from dotenv import load_dotenv
 from engine.category_selector import get_shipment_category
 from engine.uploaded_costs import (
@@ -263,14 +282,20 @@ def search_tavily(question: str, max_results: int = 5) -> list[dict]:
             f"Tavily search limit reached for this session ({TAVILY_SEARCH_LIMIT_PER_SESSION})."
         )
 
+    payload = {
+        "api_key": api_key,
+        "query": question,
+        "search_depth": "basic",
+        "max_results": max_results,
+    }
+    
+    # Apply domain restriction unless user explicitly forced manual web search
+    if not st.session_state.get("enable_web_search", False):
+        payload["include_domains"] = TRUSTED_DOMAINS
+
     response = requests.post(
         TAVILY_SEARCH_URL,
-        json={
-            "api_key": api_key,
-            "query": question,
-            "search_depth": "basic",
-            "max_results": max_results,
-        },
+        json=payload,
         timeout=20,
     )
     response.raise_for_status()
@@ -427,15 +452,13 @@ def is_service_related_search_result(result: dict) -> bool:
 def search_ddg(question: str, max_results: int = 5) -> list[dict]:
     """Search DuckDuckGo API for relevant results."""
     from duckduckgo_search import DDGS
-    search_domains = [
-        "indiamart.com",
-        "tradeindia.com",
-        "alibaba.com",
-        "medicalexpo.com",
-        "pharmacompass.com"
-    ]
-    domain_query = " OR ".join(f"site:{domain}" for domain in search_domains)
-    final_query = f"({domain_query}) {question}"
+    
+    # Restrict to trusted domains unless manual override toggle is enabled
+    if not st.session_state.get("enable_web_search", False):
+        domain_query = " OR ".join(f"site:{domain}" for domain in TRUSTED_DOMAINS)
+        final_query = f"({domain_query}) {question}"
+    else:
+        final_query = question
 
     hits = []
     # 1. Try search restricted to trusted procurement/supplier portals

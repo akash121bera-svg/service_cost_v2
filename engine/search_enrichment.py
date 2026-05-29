@@ -8,17 +8,28 @@ and falls back to Tavily Search if DuckDuckGo fails or is unavailable.
 import os
 import re
 import requests
+import json
 from typing import List, Dict, Any
 from engine.shared_state import SharedState
 from config.constants import SERVICE_CATEGORY_TERMS
 
-GOOGLE_SEARCH_DOMAINS = [
-    "indiamart.com",
-    "tradeindia.com",
-    "alibaba.com",
-    "medicalexpo.com",
-    "pharmacompass.com"
-]
+def load_trusted_domains() -> List[str]:
+    """Load trusted B2B domains from configuration file."""
+    try:
+        config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config", "trusted_domains.json")
+        with open(config_path, "r") as f:
+            data = json.load(f)
+            return data.get("trusted_domains", [])
+    except Exception:
+        return [
+            "indiamart.com",
+            "tradeindia.com",
+            "alibaba.com",
+            "medicalexpo.com",
+            "pharmacompass.com"
+        ]
+
+GOOGLE_SEARCH_DOMAINS = load_trusted_domains()
 
 
 def extract_location(question: str) -> str:
