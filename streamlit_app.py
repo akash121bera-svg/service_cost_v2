@@ -87,7 +87,7 @@ def has_location_hint(question: str) -> bool:
     question_lower = question.lower()
 
     if "near me" in question_lower:
-        return False
+        return True
 
     has_pin_code = bool(re.search(r"\b\d{5,6}\b", question_lower))
     has_near_location = bool(
@@ -134,6 +134,9 @@ def is_explicit_web_vendor_request(question: str) -> bool:
 
 def validate_web_search_question(question: str) -> Optional[str]:
     """Validate question has required elements for web search."""
+    if st.session_state.get("enable_web_search", False):
+        return None
+
     if not is_vendor_discovery_question(question) and not is_explicit_web_vendor_request(question):
         return None
 
@@ -156,19 +159,13 @@ def validate_web_search_question(question: str) -> Optional[str]:
         "market intelligence",
         "duckduckgo",
     ]
-    missing_items = []
+    
+    has_cat_or_vendor = has_service_category(question) or has_vendor_or_supplier_term(question)
+    has_loc_or_opt = has_location_hint(question) or any(term in question_lower for term in location_optional_terms)
 
-    if not has_service_category(question) and not has_vendor_or_supplier_term(question):
-        missing_items.append("service category, such as packaging, sterilization, logistics, quality, or warehousing")
-
-    if (
-        not has_location_hint(question)
-        and not any(term in question_lower for term in location_optional_terms)
-    ):
-        missing_items.append("location, such as city, area, or PIN code")
-
-    if missing_items:
-        return "Please include " + " and ".join(missing_items) + " before I search the web."
+    # Relaxed validation: block only if BOTH are entirely missing
+    if not has_cat_or_vendor and not has_loc_or_opt:
+        return "Please include a service category (e.g., packaging, logistics) or a location hint (e.g., city name, 'near me') before I search the web."
 
     return None
 
@@ -362,15 +359,20 @@ def get_requested_service_terms(question: str) -> str:
 
 
 def build_service_vendor_search_query(question: str) -> str:
-    """Build optimized search query for Tavily."""
+    """Build optimized, natural search query for search engines."""
     location = extract_location_hint(question)
     service_terms = get_requested_service_terms(question)
+    
+    # Strip common conversational phrases to build a clean search query
+    clean_q = re.sub(r"\b(?:find|search|show|list|get|please|tell me|who are|where is|where can i find)\b", "", question, flags=re.IGNORECASE)
+    clean_q = re.sub(r"[?!.,]", "", clean_q).strip()
+    
+    # If the clean question is already solid, use it. Otherwise construct a focused query.
+    if len(clean_q.split()) >= 3:
+        return clean_q
+        
     location_text = f" near {location}" if location else ""
-
-    return (
-        f"{service_terms} service cost vendor supplier quotation rate contact"
-        f"{location_text} {question}"
-    )
+    return f"{service_terms} service vendor supplier{location_text}".strip()
 
 
 def is_service_related_search_result(result: dict) -> bool:
@@ -436,6 +438,7 @@ def search_ddg(question: str, max_results: int = 5) -> list[dict]:
     final_query = f"({domain_query}) {question}"
 
     hits = []
+    # 1. Try search restricted to trusted procurement/supplier portals
     try:
         with DDGS() as ddgs:
             results = ddgs.text(final_query, max_results=max_results)
@@ -446,7 +449,10 @@ def search_ddg(question: str, max_results: int = 5) -> list[dict]:
                     "url": item.get("href", ""),
                 })
     except Exception:
-        # Fallback to general query if restricted domains fail
+        pass
+
+    # 2. Fallback to general query if restricted search returned zero results or failed
+    if not hits:
         try:
             with DDGS() as ddgs:
                 results = ddgs.text(question, max_results=max_results)
@@ -493,7 +499,7 @@ def build_web_answer(question: str) -> tuple[str, list[dict]]:
     service_results = [
         result
         for result in results
-        if is_service_related_search_result(result)
+        if st.session_state.get("enable_web_search", False) or is_service_related_search_result(result)
     ]
 
     if not service_results:
@@ -1404,9 +1410,119 @@ def build_uploaded_file_rag_answer(
     return answer, table_rows
 
 
-def render_cost_rows(rows: list[dict]) -> None:
-    """Render standard comparison rows or semantic audit rows."""
+def render_web_search_results(rows: list[dict]) -> None:
+    """Render web search results in a visually stunning card-based UI."""
     if not rows:
+        return
+
+    st.markdown("### 🌐 Live Search Results")
+    
+    st.markdown(
+        """
+        <style>
+        .search-card {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .search-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+        .badge-high {
+            background-color: rgba(46, 204, 113, 0.15);
+            color: #2ecc71;
+            border: 1px solid rgba(46, 204, 113, 0.3);
+        }
+        .badge-medium {
+            background-color: rgba(241, 196, 15, 0.15);
+            color: #f1c40f;
+            border: 1px solid rgba(241, 196, 15, 0.3);
+        }
+        .badge-location {
+            background-color: rgba(52, 152, 219, 0.15);
+            color: #3498db;
+            border: 1px solid rgba(52, 152, 219, 0.3);
+        }
+        .snippet {
+            font-size: 0.95rem;
+            color: #bdc3c7;
+            margin: 10px 0;
+            line-height: 1.5;
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 10px 14px;
+            border-left: 3px solid #3498db;
+            border-radius: 4px;
+        }
+        .contact-info {
+            font-size: 0.9rem;
+            color: #ecf0f1;
+            display: flex;
+            align-items: center;
+            margin-top: 8px;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+    for row in rows:
+        reliability = row.get("reliability", "Medium")
+        reliability_class = "badge-high" if "high" in reliability.lower() or "trusted" in reliability.lower() else "badge-medium"
+        
+        title_text = row.get('title', 'Supplier Source')
+        url = row.get('url', '')
+        if url:
+            title_html = f"<a href='{url}' target='_blank' style='text-decoration: none; color: #1ad1d7; font-size: 1.15rem; font-weight: bold;'>🔗 {title_text}</a>"
+        else:
+            title_html = f"<span style='color: #ecf0f1; font-size: 1.15rem; font-weight: bold;'>📍 {title_text}</span>"
+            
+        location = row.get("location", "Not specified")
+        contacts = row.get("contact_numbers_found", "Not found in search result")
+        snippet = row.get("snippet", "")
+        
+        contact_display = f"<span style='color: #2ecc71; font-weight: 600;'>📞 {contacts}</span>" if contacts != "Not found in search result" else f"<span style='color: #95a5a6;'>📞 {contacts}</span>"
+        
+        st.markdown(
+            f"""
+            <div class="search-card">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap;">
+                    <div style="margin-bottom: 8px;">{title_html}</div>
+                    <div>
+                        <span class="badge {reliability_class}">🛡️ {reliability}</span>
+                        <span class="badge badge-location">📍 {location}</span>
+                    </div>
+                </div>
+                <div class="snippet">"{snippet}"</div>
+                <div class="contact-info">{contact_display}</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+
+def render_cost_rows(rows: list[dict]) -> None:
+    """Render standard comparison rows, semantic audit rows, or web search cards."""
+    if not rows:
+        return
+
+    # Check if this is a web search result
+    if "contact_numbers_found" in rows[0]:
+        render_web_search_results(rows)
         return
 
     if rows[0].get("response_mode") != "detailed_audit":
@@ -1563,6 +1679,13 @@ quantity = st.number_input(
     value=100
 )
 
+enable_web_search = st.checkbox(
+    "🌐 Enable Web Search / Live Vendor Finding",
+    key="enable_web_search",
+    value=False,
+    help="Bypass local calculations and query the web directly (DuckDuckGo + Tavily fallback) to find new suppliers, rates, contacts, or industry benchmarks."
+)
+
 current_calculation_context = (
     tuple(uploaded_file.name for uploaded_file in uploaded_files or []),
     quantity,
@@ -1636,18 +1759,18 @@ if question:
         st.write(question)
 
     with st.chat_message("assistant"):
-        if not is_service_cost_question(question):
+        if not is_service_cost_question(question) and not enable_web_search:
             answer = (
                 "I can help only with service-cost topics such as vendors, quotations, "
                 "rates, packaging, sterilization, logistics, quality, warehousing, and benchmarks."
             )
             st.warning(answer)
-        elif not rag_chunks and not should_use_web_search(question):
+        elif not rag_chunks and not should_use_web_search(question) and not enable_web_search:
             answer = "Upload at least one CSV or PDF before asking this service-cost question."
             st.error(answer)
         else:
             try:
-                if should_use_web_search(question):
+                if should_use_web_search(question) or enable_web_search:
                     validation_error = validate_web_search_question(question)
 
                     if validation_error:
