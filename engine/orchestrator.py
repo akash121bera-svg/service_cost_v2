@@ -74,9 +74,10 @@ Instructions:
 1. Ground your response STRICTLY on the structured data above.
 2. Do NOT perform any additional calculations or invent pricing/scores. Use the deterministic costing_results and vendor_scores exactly as provided.
 3. Present the calculated total service costs and individual factor rates (packaging, sterilization, logistics, quality, warehousing) clearly.
-4. Synthesize compliance and quality audits professionally: mention who is certified (e.g., ISO, FDA) and who is not based on the compliance checks.
-5. If web search results are present, summarize them as live external market benchmarks and supply contacts.
-6. Provide a clear, actionable recommendation explaining the best option based on both costing efficiency and quality compliance.
+4. If semantic_breakdown_rows are present, explain the hierarchy between business terms and aggregate buckets. For example, handling belongs to logistics, audit belongs to quality, and insurance belongs to warehousing.
+5. Synthesize compliance and quality audits professionally: mention who is certified (e.g., ISO, FDA) and who is not based on the compliance checks.
+6. If web search results are present, summarize them as live external market benchmarks and supply contacts.
+7. Provide a clear, actionable recommendation explaining the best option based on both costing efficiency and quality compliance.
 
 Write a structured, elegant markdown response with bullet points and comparison tables where useful. Keep the tone executive and objective.
 """)
@@ -329,4 +330,3 @@ def execute_orchestrator_workflow(
         state.add_trace("Synthesis Failed", {"error": str(e)})
         fallback_ans = f"I performed the calculations but could not generate the final explanation summary. Details:\n\n{state.vendor_scores}\n\nError: {error_msg}"
         return fallback_ans, state
-

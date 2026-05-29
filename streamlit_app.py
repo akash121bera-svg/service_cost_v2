@@ -18,6 +18,12 @@ from engine.uploaded_costs import (
     get_factor_rate_value,
     get_vendor_name,
 )
+from engine.semantic_costs import (
+    build_semantic_breakdown_rows,
+    build_semantic_breakdown_rows_by_category,
+    is_detailed_audit_question,
+)
+from engine.query_planner import build_query_plan
 from rag.pipeline import (
     build_gemini_rag_answer,
     dataframe_to_chunks,
@@ -131,12 +137,34 @@ def validate_web_search_question(question: str) -> Optional[str]:
     if not is_vendor_discovery_question(question) and not is_explicit_web_vendor_request(question):
         return None
 
+    question_lower = question.lower()
+    location_optional_terms = [
+        "external reputation",
+        "certification",
+        "certifications",
+        "customer reviews",
+        "regulatory history",
+        "regulatory concerns",
+        "public web",
+        "public web sources",
+        "publicly",
+        "available publicly",
+        "official website",
+        "support email",
+        "market benchmark",
+        "market benchmarks",
+        "market intelligence",
+        "duckduckgo",
+    ]
     missing_items = []
 
     if not has_service_category(question) and not has_vendor_or_supplier_term(question):
         missing_items.append("service category, such as packaging, sterilization, logistics, quality, or warehousing")
 
-    if not has_location_hint(question):
+    if (
+        not has_location_hint(question)
+        and not any(term in question_lower for term in location_optional_terms)
+    ):
         missing_items.append("location, such as city, area, or PIN code")
 
     if missing_items:
@@ -206,9 +234,12 @@ def should_use_structured_answer(question: str) -> bool:
             "at scale",
             "transport",
             "transportation",
+            "handling",
             "distributor",
             "inspection",
             "audit",
+            "insurance",
+            "inventory",
             "assurance",
             "overhead",
             "complete comparative analysis",
@@ -391,11 +422,68 @@ def is_service_related_search_result(result: dict) -> bool:
 # ANSWER BUILDING FUNCTIONS
 # =============================================================================
 
+def search_ddg(question: str, max_results: int = 5) -> list[dict]:
+    """Search DuckDuckGo API for relevant results."""
+    from duckduckgo_search import DDGS
+    search_domains = [
+        "indiamart.com",
+        "tradeindia.com",
+        "alibaba.com",
+        "medicalexpo.com",
+        "pharmacompass.com"
+    ]
+    domain_query = " OR ".join(f"site:{domain}" for domain in search_domains)
+    final_query = f"({domain_query}) {question}"
+
+    hits = []
+    try:
+        with DDGS() as ddgs:
+            results = ddgs.text(final_query, max_results=max_results)
+            for item in results:
+                hits.append({
+                    "title": item.get("title", ""),
+                    "content": item.get("body", ""),
+                    "url": item.get("href", ""),
+                })
+    except Exception:
+        # Fallback to general query if restricted domains fail
+        try:
+            with DDGS() as ddgs:
+                results = ddgs.text(question, max_results=max_results)
+                for item in results:
+                    hits.append({
+                        "title": item.get("title", ""),
+                        "content": item.get("body", ""),
+                        "url": item.get("href", ""),
+                    })
+        except Exception:
+            pass
+    return hits
+
+
 def build_web_answer(question: str) -> tuple[str, list[dict]]:
-    """Build answer from web search results."""
+    """Build answer from web search results, trying DuckDuckGo first and falling back to Tavily."""
     search_query = build_service_vendor_search_query(question)
     location = extract_location_hint(question)
-    results = search_tavily(search_query)
+    
+    # 1. Try DuckDuckGo first
+    engine_used = "DuckDuckGo"
+    try:
+        results = search_ddg(search_query)
+    except Exception:
+        results = []
+
+    # 2. Fallback to Tavily if DDG failed or returned zero results
+    if not results:
+        api_key = os.getenv("TAVILY_API_KEY")
+        if api_key:
+            try:
+                results = search_tavily(search_query)
+                engine_used = "Tavily"
+            except Exception as e:
+                return f"Both search engines failed. Tavily error: {str(e)}", []
+        else:
+            return "DuckDuckGo search returned no results and no TAVILY_API_KEY is configured for fallback.", []
 
     if not results:
         return "I could not find relevant web results for that question.", []
@@ -410,7 +498,7 @@ def build_web_answer(question: str) -> tuple[str, list[dict]]:
 
     if not service_results:
         return (
-            "I found web results, but they did not look related to service-cost vendors, "
+            f"I found web results using {engine_used}, but they did not look related to service-cost vendors, "
             "quotations, rates, packaging, sterilization, logistics, quality, warehousing, or benchmarks. "
             "Try adding a specific service category and location."
         ), []
@@ -437,7 +525,7 @@ def build_web_answer(question: str) -> tuple[str, list[dict]]:
         )
 
     answer = (
-        "Here are live Tavily results for that vendor/location request. Contact numbers are shown "
+        f"Here are live {engine_used} results for that vendor/location request. Contact numbers are shown "
         "only when they appear in the search result text. Verify each vendor directly before making a decision."
     )
 
@@ -456,6 +544,63 @@ def _list_available_vendors(csv_dataframes: list) -> tuple[str, list[dict]]:
         }
         for file_name, _ in csv_dataframes
     ]
+
+
+def _resolve_answer_quantity(question: str, csv_dataframes: list, quantity: int) -> int:
+    """Resolve quantity from the question, falling back to recent chat context."""
+    context_quantity = st.session_state.get("last_answer_quantity", quantity)
+    category_quantity = get_category_quantity(question, csv_dataframes, context_quantity)
+    return get_answer_quantity(question, category_quantity)
+
+
+def _has_explicit_quantity_context(question: str) -> bool:
+    """Return True when the user named a quantity or shipment size."""
+    if re.search(r"\b(?:small|medium|large)\b", question, re.IGNORECASE):
+        return True
+
+    return bool(
+        re.search(
+            r"\b\d+\s*(?:-|to)?\s*(?:unit|units|kit|kits)\b",
+            question,
+            re.IGNORECASE,
+        )
+    )
+
+
+def _extract_quantity_range(question: str) -> Optional[tuple[int, int]]:
+    """Extract a numeric order range such as 200-500 units."""
+    range_match = re.search(
+        r"\b(\d+)\s*(?:-|–|to)\s*(\d+)\s*(?:unit|units|kit|kits)?\b",
+        question,
+        re.IGNORECASE,
+    )
+
+    if not range_match:
+        return None
+
+    start_qty = int(range_match.group(1))
+    end_qty = int(range_match.group(2))
+
+    return (min(start_qty, end_qty), max(start_qty, end_qty))
+
+
+def _get_optimized_range_quantity(question: str, fallback_quantity: int) -> Optional[int]:
+    """Use the upper range bound for fixed shipment/period per-unit optimization."""
+    quantity_range = _extract_quantity_range(question)
+
+    if not quantity_range:
+        return None
+
+    question_lower = question.lower()
+    has_optimization_intent = any(
+        term in question_lower
+        for term in ["optimized", "optimize", "minimize", "lowest", "cheapest", "best"]
+    )
+
+    if not has_optimization_intent:
+        return fallback_quantity
+
+    return quantity_range[1]
 
 
 def _explain_vendor_choice(question_lower: str) -> Optional[tuple[str, list]]:
@@ -572,10 +717,13 @@ def _rank_by_requested_factor(
     if not asks_extreme:
         return None, []
 
+    range_quantity = _get_optimized_range_quantity(question, answer_quantity)
+    scoring_quantity = range_quantity or answer_quantity
+    quantity_range = _extract_quantity_range(question)
     selected_dataframes = find_vendor_matches(question, csv_dataframes)
     table_rows = build_comparison_factor_rows(
         selected_dataframes or csv_dataframes,
-        answer_quantity,
+        scoring_quantity,
     )
     scored_rows = []
 
@@ -588,9 +736,12 @@ def _rank_by_requested_factor(
             "vendor": row["vendor"],
             "file": row["file"],
             "shipment_category": row["shipment_category"],
-            "quantity": answer_quantity,
+            "quantity": scoring_quantity,
             "combined_rate": round(score, 2),
         }
+
+        if quantity_range:
+            scored_row["requested_quantity_range"] = f"{quantity_range[0]}-{quantity_range[1]}"
 
         for factor in requested_factors:
             scored_row[f"{factor}_rate"] = row.get(f"{factor}_rate")
@@ -609,9 +760,16 @@ def _rank_by_requested_factor(
     selected = sorted_rows[0]
     direction = "highest" if reverse_sort else "lowest"
     factor_text = " + ".join(requested_factors)
+    quantity_text = f"{scoring_quantity} units"
+
+    if quantity_range and range_quantity:
+        quantity_text = (
+            f"{scoring_quantity} units within the requested "
+            f"{quantity_range[0]}-{quantity_range[1]} unit range"
+        )
 
     answer = (
-        f"For {answer_quantity} units, **{selected['file']}** has the {direction} "
+        f"For {quantity_text}, **{selected['file']}** has the {direction} "
         f"{factor_text} cost at **{selected['combined_rate']}** per unit."
     )
 
@@ -729,6 +887,34 @@ def _build_vendor_breakdown(
     if not vendor_matches:
         return None, []
 
+    if not _has_explicit_quantity_context(question):
+        semantic_answer, semantic_rows = build_semantic_breakdown_rows_by_category(
+            question,
+            vendor_matches,
+        )
+
+        if semantic_rows:
+            answer = (
+                "Here is the detailed cost breakdown across the matched vendor's "
+                "shipment quantity bands. "
+                + semantic_answer
+            )
+            return answer, semantic_rows
+
+    semantic_answer, semantic_rows = build_semantic_breakdown_rows(
+        question,
+        vendor_matches,
+        answer_quantity,
+    )
+
+    if semantic_rows:
+        answer = (
+            f"Here is the detailed cost breakdown for {answer_quantity} units "
+            "from the matched vendor. "
+            + semantic_answer
+        )
+        return answer, semantic_rows
+
     table_rows = build_comparison_factor_rows(vendor_matches, answer_quantity)
     answer = (
         f"Here is the detailed cost breakdown for {answer_quantity} units "
@@ -736,6 +922,28 @@ def _build_vendor_breakdown(
     )
 
     return answer, table_rows
+
+
+def _build_semantic_cost_answer(
+    question: str,
+    question_lower: str,
+    csv_dataframes: list,
+    answer_quantity: int,
+) -> tuple[str, list[dict]]:
+    """Build a hierarchical semantic cost response for sub-component terms."""
+    if not is_detailed_audit_question(question_lower):
+        return None, []
+
+    semantic_answer, semantic_rows = build_semantic_breakdown_rows(
+        question,
+        csv_dataframes,
+        answer_quantity,
+    )
+
+    if not semantic_rows:
+        return None, []
+
+    return semantic_answer, semantic_rows
 
 
 def _get_vendor_total_cost(
@@ -853,6 +1061,106 @@ def _compare_scale_change(
     return answer, sorted_rows
 
 
+def _rank_landed_scalability_compliance(
+    question_lower: str,
+    csv_dataframes: list,
+    answer_quantity: int,
+    query_plan: Optional[dict] = None,
+) -> tuple[str, list[dict]]:
+    """Rank vendors across landed cost, shipment fit, and compliance overhead."""
+    plan_criteria = set((query_plan or {}).get("criteria", []))
+    has_planned_intent = (
+        (query_plan or {}).get("intent") == "multi_criteria_vendor_ranking"
+        and "shipment_scalability" in plan_criteria
+        and len(plan_criteria & {"total_landed_cost", "compliance_overhead"}) >= 1
+    )
+    has_legacy_terms = all(
+        term in question_lower
+        for term in [
+            "rank",
+            "total landed cost",
+            "shipment scalability",
+            "compliance overhead",
+        ]
+    )
+
+    if not has_planned_intent and not has_legacy_terms:
+        return None, []
+
+    table_rows = []
+
+    for file_name, df in csv_dataframes:
+        row = get_shipment_category(df, answer_quantity)
+        factor_row = build_comparison_factor_rows(
+            [(file_name, df)],
+            answer_quantity,
+        )[0]
+
+        compliance_columns = [
+            "inspection_cost_per_shipment",
+            "audit_cost_per_shipment",
+            "documentation_cost_per_shipment",
+        ]
+        compliance_overhead = sum(
+            float(row[column])
+            for column in compliance_columns
+            if column in row
+        )
+        min_qty = int(row.get("min_qty", 0))
+        max_qty = int(row.get("max_qty", 0))
+        supports_quantity = min_qty <= answer_quantity <= max_qty
+        available_capacity = max(max_qty - answer_quantity, 0)
+
+        table_rows.append(
+            {
+                "vendor": get_vendor_name(file_name),
+                "file": file_name,
+                "shipment_category": row.get("shipment_category", "N/A"),
+                "quantity": answer_quantity,
+                "category_min_qty": min_qty,
+                "category_max_qty": max_qty,
+                "supports_quantity": supports_quantity,
+                "available_capacity": available_capacity,
+                "total_cost_per_unit": factor_row["total_cost"],
+                "total_landed_cost": round(
+                    factor_row["total_cost"] * answer_quantity,
+                    2,
+                ),
+                "compliance_overhead_cost": round(compliance_overhead, 2),
+                "compliance_overhead_per_unit": round(
+                    compliance_overhead / answer_quantity,
+                    2,
+                ),
+                "rank_basis": (
+                    "total_landed_cost asc, compliance_overhead_per_unit asc, "
+                    "available_capacity desc"
+                ),
+            }
+        )
+
+    sorted_rows = sorted(
+        table_rows,
+        key=lambda item: (
+            not item["supports_quantity"],
+            item["total_landed_cost"],
+            item["compliance_overhead_per_unit"],
+            -item["available_capacity"],
+        ),
+    )
+
+    for rank, row in enumerate(sorted_rows, start=1):
+        row["rank"] = rank
+
+    best_row = sorted_rows[0]
+    answer = (
+        f"For {answer_quantity} units, **{best_row['file']}** ranks first on "
+        "total landed cost, with shipment scalability and compliance overhead "
+        "shown as supporting decision factors."
+    )
+
+    return answer, sorted_rows
+
+
 def _complete_comparative_report(
     question_lower: str,
     csv_dataframes: list,
@@ -964,10 +1272,8 @@ def build_structured_answer(
     quantity: int,
 ) -> tuple[str, list[dict]]:
     """Build structured answer from CSV data."""
-    answer_quantity = get_answer_quantity(
-        question,
-        get_category_quantity(question, csv_dataframes, quantity),
-    )
+    query_plan = build_query_plan(question)
+    answer_quantity = _resolve_answer_quantity(question, csv_dataframes, quantity)
     question_lower = question.lower()
     table_rows = []
 
@@ -999,11 +1305,23 @@ def build_structured_answer(
     if report_answer:
         return report_answer, report_rows
 
+    landed_rank_answer, landed_rank_rows = _rank_landed_scalability_compliance(
+        question_lower, csv_dataframes, answer_quantity, query_plan
+    )
+    if landed_rank_answer:
+        return landed_rank_answer, landed_rank_rows
+
     breakdown_answer, breakdown_rows = _build_vendor_breakdown(
         question, question_lower, csv_dataframes, answer_quantity
     )
     if breakdown_answer:
         return breakdown_answer, breakdown_rows
+
+    semantic_answer, semantic_rows = _build_semantic_cost_answer(
+        question, question_lower, csv_dataframes, answer_quantity
+    )
+    if semantic_answer:
+        return semantic_answer, semantic_rows
 
     vendor_total_answer, vendor_total_rows = _get_vendor_total_cost(
         question, question_lower, csv_dataframes, answer_quantity
@@ -1086,6 +1404,69 @@ def build_uploaded_file_rag_answer(
     return answer, table_rows
 
 
+def render_cost_rows(rows: list[dict]) -> None:
+    """Render standard comparison rows or semantic audit rows."""
+    if not rows:
+        return
+
+    if rows[0].get("response_mode") != "detailed_audit":
+        results_df = pd.DataFrame(rows)
+
+        if "total_cost" in results_df.columns:
+            results_df = results_df.sort_values("total_cost")
+
+        st.dataframe(results_df)
+        return
+
+    results_df = pd.DataFrame(rows)
+    visible_columns = [
+        "category_min_qty",
+        "category_max_qty",
+        "quantity_basis",
+        "component",
+        "source_column",
+        "availability",
+        "per_unit_cost",
+        "aggregate_rate",
+    ]
+
+    summary_columns = [
+        "vendor",
+        "file",
+        "shipment_category",
+        "quantity",
+        "quantity_basis",
+        "total_cost",
+    ]
+    summary_df = results_df[
+        [column for column in summary_columns if column in results_df.columns]
+    ].drop_duplicates()
+    st.dataframe(summary_df)
+
+    group_columns = ["category"]
+    if "shipment_category" in results_df.columns and results_df["shipment_category"].nunique() > 1:
+        group_columns.insert(0, "shipment_category")
+
+    for group_key, category_df in results_df.groupby(group_columns, sort=False):
+        category_name = group_key[-1] if isinstance(group_key, tuple) else group_key
+        aggregate_rate = category_df["aggregate_rate"].dropna()
+        aggregate_label = (
+            f" - aggregate rate {aggregate_rate.iloc[0]}"
+            if not aggregate_rate.empty
+            else ""
+        )
+        shipment_label = ""
+        if isinstance(group_key, tuple):
+            shipment_label = f"{group_key[0]} / "
+
+        with st.expander(f"{shipment_label}{category_name}{aggregate_label}", expanded=True):
+            st.dataframe(
+                category_df[
+                    [column for column in visible_columns if column in category_df.columns]
+                ]
+            )
+
+
 @st.cache_data(show_spinner=False)
 def parse_uploaded_file(file_name: str, file_bytes: bytes) -> tuple[Optional[pd.DataFrame], list[str]]:
     """Parse one uploaded file (CSV, PDF, or Image) and extract costing data & RAG context."""
@@ -1144,6 +1525,9 @@ if "calculation_context" not in st.session_state:
 if "costing_engine_context_error" not in st.session_state:
     st.session_state["costing_engine_context_error"] = None
 
+if "last_answer_quantity" not in st.session_state:
+    st.session_state["last_answer_quantity"] = None
+
 uploaded_files = st.file_uploader(
     "Upload Rate Cards (CSV, PDF, PNG, JPG, JPEG)",
     type=["csv", "pdf", "png", "jpg", "jpeg"],
@@ -1187,6 +1571,7 @@ current_calculation_context = (
 if st.session_state["calculation_context"] != current_calculation_context:
     st.session_state["calculation_results"] = []
     st.session_state["calculation_context"] = current_calculation_context
+    st.session_state["last_answer_quantity"] = quantity
 
 if csv_dataframes:
     try:
@@ -1234,10 +1619,12 @@ st.subheader("Agent Chat")
 for message in st.session_state["chat_history"]:
     with st.chat_message(message["role"]):
         st.write(message["content"])
+        render_cost_rows(message.get("rows", []))
 
 question = st.chat_input("Ask about service costs, vendors, rates, or nearby suppliers")
 
 if question:
+    answer_rows = []
     st.session_state["chat_history"].append(
         {
             "role": "user",
@@ -1274,14 +1661,11 @@ if question:
                         rag_chunks,
                         quantity,
                     )
+                    if costs and isinstance(costs[0], dict) and "quantity" in costs[0]:
+                        st.session_state["last_answer_quantity"] = int(costs[0]["quantity"])
                 st.write(answer)
-                if costs:
-                    results_df = pd.DataFrame(costs)
-
-                    if "total_cost" in results_df.columns:
-                        results_df = results_df.sort_values("total_cost")
-
-                    st.dataframe(results_df)
+                answer_rows = costs
+                render_cost_rows(costs)
             except KeyError as error:
                 answer = f"Missing required column {error}."
                 st.error(answer)
@@ -1296,5 +1680,6 @@ if question:
         {
             "role": "assistant",
             "content": answer,
+            "rows": answer_rows,
         }
     )

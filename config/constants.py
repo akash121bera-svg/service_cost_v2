@@ -41,6 +41,14 @@ SERVICE_COST_TERMS = [
     "medical supply",
     "medical supplies",
     "healthcare",
+    "compliance",
+    "certification",
+    "certifications",
+    "regulatory",
+    "iso",
+    "gmp",
+    "ce",
+    "fda",
 ]
 
 WEB_SEARCH_TERMS = [
@@ -63,6 +71,23 @@ WEB_SEARCH_TERMS = [
     "reliable",
     "trusted",
     "trustworthy",
+    "external",
+    "public",
+    "publicly",
+    "public web",
+    "public web sources",
+    "duckduckgo",
+    "market benchmark",
+    "market benchmarks",
+    "market intelligence",
+    "official website",
+    "support email",
+    "customer reviews",
+    "reputation",
+    "regulatory history",
+    "regulatory concerns",
+    "certifications",
+    "available publicly",
 ]
 
 SERVICE_EXPLAIN_TERMS = [
@@ -92,6 +117,14 @@ SERVICE_CATEGORY_TERMS = [
     "medical supply",
     "medical supplies",
     "healthcare",
+    "compliance",
+    "certification",
+    "certifications",
+    "regulatory",
+    "iso",
+    "gmp",
+    "ce",
+    "fda",
 ]
 
 VENDOR_DISCOVERY_TERMS = [
@@ -110,6 +143,23 @@ VENDOR_DISCOVERY_TERMS = [
     "reliable",
     "trusted",
     "trustworthy",
+    "external",
+    "public",
+    "publicly",
+    "public web",
+    "public web sources",
+    "duckduckgo",
+    "market benchmark",
+    "market benchmarks",
+    "market intelligence",
+    "official website",
+    "support email",
+    "customer reviews",
+    "reputation",
+    "regulatory history",
+    "regulatory concerns",
+    "certifications",
+    "available publicly",
 ]
 
 STRUCTURED_ANSWER_TERMS = [

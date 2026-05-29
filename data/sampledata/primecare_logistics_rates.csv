@@ -1,0 +1,4 @@
+vendor_id,vendor_name,shipment_category,min_qty,max_qty,pouch_rate_per_unit,label_rate_per_unit,carton_rate_per_unit,sterilization_batch_cost,validation_cost,units_per_batch,transport_cost_per_shipment,handling_cost_per_shipment,distributor_fee_per_shipment,inspection_cost_per_shipment,audit_cost_per_shipment,documentation_cost_per_shipment,warehouse_rent_period,insurance_cost_period,inventory_handling_cost_period
+V003,PrimeCare Logistics,Small,100,200,3.08,1.18,2.35,24500,5100,1450,7100,1150,850,2500,2050,1150,19800,3500,4300
+V003,PrimeCare Logistics,Medium,201,500,2.72,1.02,2.02,27200,5700,2700,9600,1750,1350,3550,2850,1750,26500,4900,6100
+V003,PrimeCare Logistics,Large,501,5000,2.32,0.86,1.72,34200,7100,6400,16200,3100,2350,5750,4500,2800,45500,8100,9700

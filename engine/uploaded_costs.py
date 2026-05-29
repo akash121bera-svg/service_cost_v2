@@ -43,7 +43,34 @@ def get_answer_quantity(question, fallback_quantity):
     Returns:
         int: Quantity to use for calculations
     """
-    match = re.search(r"\b\d+\b", question)
+    if re.search(r"\b(?:small|medium|large)\b", question, re.IGNORECASE):
+        return fallback_quantity
+
+    range_match = re.search(r"\b\d+\s*(?:-|–|to)\s*\d+\b", question)
+
+    if range_match:
+        return fallback_quantity
+
+    unit_match = re.search(
+        r"\b(\d+)\s*(?:-|–)?\s*(?:unit|units|kit|kits)\b",
+        question,
+        re.IGNORECASE,
+    )
+
+    if not unit_match:
+        unit_match = re.search(
+            r"\b(\d+)\s+(?:[a-z]+\s+){0,4}(?:unit|units|kit|kits)\b",
+            question,
+            re.IGNORECASE,
+        )
+
+    if unit_match:
+        return int(unit_match.group(1))
+
+    cleaned_question = re.sub(r"\biso\s+\d+\b", "", question, flags=re.IGNORECASE)
+    cleaned_question = re.sub(r"\btop\s+\d+\b", "", cleaned_question, flags=re.IGNORECASE)
+
+    match = re.search(r"\b\d+\b", cleaned_question)
 
     if match:
         return int(match.group())
@@ -330,6 +357,24 @@ def run_costing_engine(state, csv_dataframes):
             "quantity": state.quantity,
             "comparison_rows": comparison_rows,
         }
+
+        try:
+            from engine.semantic_costs import (
+                build_semantic_breakdown_rows,
+                is_detailed_audit_question,
+            )
+
+            if is_detailed_audit_question(state.query.lower()):
+                _, semantic_rows = build_semantic_breakdown_rows(
+                    state.query,
+                    csv_dataframes,
+                    state.quantity,
+                )
+
+                if semantic_rows:
+                    state.costing_results["semantic_breakdown_rows"] = semantic_rows
+        except Exception as semantic_error:
+            state.costing_results["semantic_breakdown_error"] = str(semantic_error)
         
         # Keep vendor profiles up to date in state
         state.vendor_profiles = [
@@ -381,4 +426,3 @@ def run_vendor_logic(state, csv_dataframes):
     except Exception as e:
         state.add_trace("Vendor Scoring Failed", {"error": str(e)})
         return []
-

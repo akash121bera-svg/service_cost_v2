@@ -1,0 +1,4 @@
+vendor_id,vendor_name,shipment_category,min_qty,max_qty,pouch_rate_per_unit,label_rate_per_unit,carton_rate_per_unit,sterilization_batch_cost,validation_cost,units_per_batch,transport_cost_per_shipment,handling_cost_per_shipment,distributor_fee_per_shipment,inspection_cost_per_shipment,audit_cost_per_shipment,documentation_cost_per_shipment,warehouse_rent_period,insurance_cost_period,inventory_handling_cost_period
+V004,BioSafe Packaging,Small,100,200,1.90,0.68,1.50,26200,5900,1150,12000,2550,1750,2950,2350,1450,17200,3150,4050
+V004,BioSafe Packaging,Medium,201,500,1.68,0.60,1.34,29800,6400,2200,15400,3550,2480,4050,3180,2180,23200,4450,5350
+V004,BioSafe Packaging,Large,501,5000,1.42,0.50,1.15,36500,7700,5000,27000,5700,4150,6600,5050,3450,40500,7100,8600

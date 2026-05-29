@@ -1,0 +1,4 @@
+vendor_id,vendor_name,shipment_category,min_qty,max_qty,pouch_rate_per_unit,label_rate_per_unit,carton_rate_per_unit,sterilization_batch_cost,validation_cost,units_per_batch,transport_cost_per_shipment,handling_cost_per_shipment,distributor_fee_per_shipment,inspection_cost_per_shipment,audit_cost_per_shipment,documentation_cost_per_shipment,warehouse_rent_period,insurance_cost_period,inventory_handling_cost_period
+V001,MedPack Solutions,Small,100,200,2.45,0.88,1.92,23500,4200,1250,9800,1850,1300,3100,2600,1400,17500,3200,3900
+V001,MedPack Solutions,Medium,201,500,2.18,0.76,1.68,26000,4700,2400,12800,2400,1750,4050,3350,2100,23500,4500,5400
+V001,MedPack Solutions,Large,501,5000,1.82,0.63,1.42,33500,6200,5600,21500,4100,3150,6400,5100,3300,41000,7200,8900

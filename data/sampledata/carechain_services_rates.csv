@@ -1,0 +1,4 @@
+vendor_id,vendor_name,shipment_category,min_qty,max_qty,pouch_rate_per_unit,label_rate_per_unit,carton_rate_per_unit,sterilization_batch_cost,validation_cost,units_per_batch,transport_cost_per_shipment,handling_cost_per_shipment,distributor_fee_per_shipment,inspection_cost_per_shipment,audit_cost_per_shipment,documentation_cost_per_shipment,warehouse_rent_period,insurance_cost_period,inventory_handling_cost_period
+V005,CareChain Services,Small,100,200,2.62,0.90,1.92,20500,3900,1650,9900,1950,1350,5300,6500,3300,14200,2550,2950
+V005,CareChain Services,Medium,201,500,2.32,0.78,1.70,23800,4650,3150,13400,2750,1880,7200,8350,4250,20200,3850,4250
+V005,CareChain Services,Large,501,5000,2.02,0.66,1.45,30500,5700,7400,24000,4650,3250,9950,11350,6200,35000,6300,7000
