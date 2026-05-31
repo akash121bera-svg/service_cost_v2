@@ -17,9 +17,9 @@ from engine.caching import GLOBAL_CACHE
 
 
 def get_llm():
-    """Retrieve Groq Llama 3.2 Vision LLM instance."""
+    """Retrieve Groq Llama 4 Scout Vision LLM instance."""
     return ChatGroq(
-        model="llama-3.2-90b-vision-preview",
+        model="meta-llama/llama-4-scout-17b-16e-instruct",
         temperature=0,
     )
 

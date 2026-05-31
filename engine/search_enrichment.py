@@ -102,11 +102,11 @@ class HTMLTextExtractor(HTMLParser):
         self.ignore = False
 
     def handle_starttag(self, tag, attrs):
-        if tag in ('script', 'style', 'head', 'meta', 'header', 'footer', 'nav', 'noscript'):
+        if tag in ('script', 'style', 'head', 'meta', 'header', 'footer', 'nav', 'noscript', 'select', 'option'):
             self.ignore = True
 
     def handle_endtag(self, tag):
-        if tag in ('script', 'style', 'head', 'meta', 'header', 'footer', 'nav', 'noscript'):
+        if tag in ('script', 'style', 'head', 'meta', 'header', 'footer', 'nav', 'noscript', 'select', 'option'):
             self.ignore = False
 
     def handle_data(self, data):
@@ -428,29 +428,32 @@ def search_duckduckgo(query: str, max_results: int = DEFAULT_MAX_RESULTS) -> Lis
     hits = []
     
     # 1. Try search restricted to trusted procurement/supplier portals first
-    try:
-        domain_query = " OR ".join(f"site:{domain}" for domain in GOOGLE_SEARCH_DOMAINS)
-        final_query = f"({domain_query}) {query}"
-        logger.info(f"Executing restricted DDG search query: {final_query}")
-        with DDGS() as ddgs:
-            results = ddgs.text(final_query, max_results=max_results)
-            for item in results:
-                title = item.get("title", "")
-                link = item.get("href", "")
-                snippet = item.get("body", "") or item.get("snippet", "")
-                combined = f"{title} {snippet}"
-                
-                hits.append({
-                    "title": title,
-                    "url": link,
-                    "snippet": snippet,
-                    "content": snippet,
-                    "contact_numbers_found": extract_contacts(combined),
-                    "reliability": "High: trusted procurement portal (via DDG)" if any(d in link for d in GOOGLE_SEARCH_DOMAINS) else "Medium: verify directly with vendor",
-                    "source": "duckduckgo",
-                })
-    except Exception as e:
-        logger.warning(f"Restricted DuckDuckGo search failed: {e}")
+    if "-site:" in query:
+        logger.info("Exclusion operators detected. Skipping restricted search phase to prioritize general vendor sites.")
+    else:
+        try:
+            domain_query = " OR ".join(f"site:{domain}" for domain in GOOGLE_SEARCH_DOMAINS)
+            final_query = f"({domain_query}) {query}"
+            logger.info(f"Executing restricted DDG search query: {final_query}")
+            with DDGS() as ddgs:
+                results = ddgs.text(final_query, max_results=max_results)
+                for item in results:
+                    title = item.get("title", "")
+                    link = item.get("href", "")
+                    snippet = item.get("body", "") or item.get("snippet", "")
+                    combined = f"{title} {snippet}"
+                    
+                    hits.append({
+                        "title": title,
+                        "url": link,
+                        "snippet": snippet,
+                        "content": snippet,
+                        "contact_numbers_found": extract_contacts(combined),
+                        "reliability": "High: trusted procurement portal (via DDG)" if any(d in link for d in GOOGLE_SEARCH_DOMAINS) else "Medium: verify directly with vendor",
+                        "source": "duckduckgo",
+                    })
+        except Exception as e:
+            logger.warning(f"Restricted DuckDuckGo search failed: {e}")
 
     # 2. Fallback to general query if restricted search returned zero results or failed
     if not hits:
@@ -534,10 +537,17 @@ def vendor_search_with_fallback(
             api_key=tavily_api_key,
             max_results=max_results,
         )
+        tavily_evaluation = evaluate_search_results(
+            query=query,
+            results=tavily_results,
+            confidence_threshold=confidence_threshold,
+        )
         metadata.update(
             {
                 "source": "tavily",
                 "fallback_used": True,
+                "confidence": tavily_evaluation["confidence"],
+                "fallback_reason": tavily_evaluation["reason"],
                 "results_count": len(tavily_results),
             }
         )
@@ -546,8 +556,8 @@ def vendor_search_with_fallback(
             extra={
                 "query": query,
                 "source": "tavily",
-                "confidence": evaluation["confidence"],
-                "fallback_reason": evaluation["reason"],
+                "confidence": tavily_evaluation["confidence"],
+                "fallback_reason": tavily_evaluation["reason"],
                 "results_count": len(tavily_results),
             },
         )

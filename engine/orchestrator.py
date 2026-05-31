@@ -15,6 +15,7 @@ import re
 import concurrent.futures
 from typing import List, Dict, Any, Tuple, Optional
 from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_classic.chains import LLMChain
@@ -84,11 +85,28 @@ Write a structured, elegant markdown response with bullet points and comparison 
 
 
 def get_llm():
-    """Retrieve Groq Llama 3.2 Vision LLM instance."""
-    return ChatGroq(
-        model="llama-3.2-90b-vision-preview",
+    """Retrieve LLM instance (Gemini with active Llama 3.3 Groq fallback)."""
+    google_key = os.environ.get("GOOGLE_API_KEY")
+    gemini_model = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
+    
+    groq_llm = ChatGroq(
+        model="llama-3.3-70b-versatile",
         temperature=0,
     )
+    
+    if google_key and "your_" not in google_key:
+        try:
+            gemini_llm = ChatGoogleGenerativeAI(
+                model=gemini_model,
+                temperature=0,
+                google_api_key=google_key,
+                max_retries=1,
+            )
+            return gemini_llm.with_fallbacks([groq_llm])
+        except Exception:
+            return groq_llm
+            
+    return groq_llm
 
 
 def classify_query(query: str) -> List[str]:

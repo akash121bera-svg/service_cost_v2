@@ -253,7 +253,7 @@ def _parse_llm_json(raw_text):
 
 
 def _llm_plan(question):
-    if not os.getenv("GROQ_API_KEY"):
+    if not os.getenv("GROQ_API_KEY") and not os.getenv("GOOGLE_API_KEY"):
         return None
 
     try:
@@ -261,11 +261,30 @@ def _llm_plan(question):
         from langchain_core.prompts import PromptTemplate
         from langchain_classic.chains import LLMChain
         from langchain_groq import ChatGroq
+        from langchain_google_genai import ChatGoogleGenerativeAI
 
-        llm = ChatGroq(
-            model="llama-3.2-90b-vision-preview",
+        google_key = os.environ.get("GOOGLE_API_KEY")
+        gemini_model = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
+        
+        groq_llm = ChatGroq(
+            model="llama-3.3-70b-versatile",
             temperature=0,
         )
+        
+        if google_key and "your_" not in google_key:
+            try:
+                gemini_llm = ChatGoogleGenerativeAI(
+                    model=gemini_model,
+                    temperature=0,
+                    google_api_key=google_key,
+                    max_retries=1,
+                )
+                llm = gemini_llm.with_fallbacks([groq_llm])
+            except Exception:
+                llm = groq_llm
+        else:
+            llm = groq_llm
+
         chain = LLMChain(
             llm=llm,
             prompt=PromptTemplate.from_template(PLANNER_PROMPT),

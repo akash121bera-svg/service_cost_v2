@@ -73,6 +73,28 @@ from config.constants import (
 
 load_dotenv()
 
+DIRECTORY_DOMAINS = {
+    "indiamart.com",
+    "tradeindia.com",
+    "alibaba.com",
+    "medicalexpo.com",
+    "pharmacompass.com",
+    "justdial.com",
+    "exportersindia.com",
+    "sulekha.com",
+    "yellowpages.com",
+    "justdial",
+    "yellowpages"
+}
+
+def is_directory_domain(url: str) -> bool:
+    from urllib.parse import urlparse
+    if not url:
+        return False
+    parsed = urlparse(url if "://" in url else f"https://{url}")
+    domain = parsed.netloc.lower().removeprefix("www.")
+    return any(d == domain or domain.endswith(f".{d}") or d in domain for d in DIRECTORY_DOMAINS)
+
 
 # =============================================================================
 # VALIDATION FUNCTIONS
@@ -352,12 +374,15 @@ def build_service_vendor_search_query(question: str) -> str:
     clean_q = re.sub(r"\b(?:find|search|show|list|get|please|tell me|who are|where is|where can i find)\b", "", question, flags=re.IGNORECASE)
     clean_q = re.sub(r"[?!.,]", "", clean_q).strip()
     
+    # Exclude B2B yellow pages and directories to prioritize direct supplier websites
+    exclusion_suffix = " -site:indiamart.com -site:justdial.com -site:tradeindia.com -site:alibaba.com -site:yellowpages.com -site:sulekha.com -site:exportersindia.com"
+    
     # If the clean question is already solid, use it. Otherwise construct a focused query.
     if len(clean_q.split()) >= 3:
-        return clean_q
+        return f"{clean_q}{exclusion_suffix}"
         
     location_text = f" near {location}" if location else ""
-    return f"{service_terms} service vendor supplier{location_text}".strip()
+    return f"{service_terms} service vendor supplier{location_text}{exclusion_suffix}".strip()
 
 
 def is_service_related_search_result(result: dict) -> bool:
@@ -410,12 +435,29 @@ def is_service_related_search_result(result: dict) -> bool:
 # =============================================================================
 
 def build_web_answer(question: str) -> tuple[str, list[dict]]:
-    """Build answer from web search results using DDG-first quality fallback."""
+    """Build answer from web search results using persistent database caching and quality fallbacks."""
+    # 1. Check persistent SQLite database cache first!
+    from engine.persistent_cache import get_cached_answer, set_cached_answer
+    
+    cached_res = get_cached_answer(question)
+    if cached_res is not None:
+        answer, table_rows, matched_query = cached_res
+        if matched_query.lower().strip("?!. ") != question.lower().strip("?!. "):
+            st.toast(f"⚡ Served from database cache (similar query match: '{matched_query}')")
+        else:
+            st.toast("⚡ Served from database cache")
+        return answer, table_rows
+
+    # 2. Cache Miss: Run live search and scraping pipeline
     search_query = build_service_vendor_search_query(question)
     location = extract_location_hint(question)
 
     try:
         results, metadata = vendor_search_with_fallback(search_query)
+        
+        # Concurrently scrape top results to extract phone numbers from actual page content
+        from engine.search_enrichment import enrich_hits_with_scraping
+        results = enrich_hits_with_scraping(results, max_to_scrape=3)
     except Exception as exc:
         return f"Vendor web search failed: {str(exc)}", []
 
@@ -423,23 +465,32 @@ def build_web_answer(question: str) -> tuple[str, list[dict]]:
         return "I could not find relevant web results for that question.", []
 
     engine_used = "DuckDuckGo" if metadata.get("source") == "duckduckgo" else "Tavily"
-
     table_rows = []
 
+    # Filter service results
     service_results = [
         result
         for result in results
         if st.session_state.get("enable_web_search", False) or is_service_related_search_result(result)
     ]
 
-    if not service_results:
+    # Prioritize direct vendor/company websites by filtering out directories
+    direct_vendors = [
+        result for result in service_results
+        if not is_directory_domain(result.get("url", ""))
+    ]
+    
+    # Use direct vendors if we found any, otherwise fallback to all service results
+    final_service_results = direct_vendors if len(direct_vendors) >= 1 else service_results
+
+    if not final_service_results:
         return (
             f"I found web results using {engine_used}, but they did not look related to service-cost vendors, "
             "quotations, rates, packaging, sterilization, logistics, quality, warehousing, or benchmarks. "
             "Try adding a specific service category and location."
         ), []
 
-    for result in service_results[:5]:
+    for result in final_service_results[:5]:
         result_text = " ".join(
             [
                 result.get("title", ""),
@@ -470,6 +521,9 @@ def build_web_answer(question: str) -> tuple[str, list[dict]]:
         "only when they appear in the search result text. Verify each vendor directly before making a decision.\n\n"
         f"Search metadata: {json.dumps({'source': metadata.get('source'), 'fallback_used': metadata.get('fallback_used', False), 'confidence': metadata.get('confidence', 0.0)})}"
     )
+
+    # 3. Store the new answer and table rows persistently in SQLite database for future reuse!
+    set_cached_answer(question, answer, table_rows)
 
     return answer, table_rows
 
@@ -1347,108 +1401,32 @@ def build_uploaded_file_rag_answer(
 
 
 def render_web_search_results(rows: list[dict]) -> None:
-    """Render web search results in a visually stunning card-based UI."""
+    """Render web search results in a clean tabular UI."""
     if not rows:
         return
 
-    st.markdown("### 🌐 Live Search Results")
+    st.markdown("### 📊 Live Vendor Search Results")
     
-    st.markdown(
-        """
-        <style>
-        .search-card {
-            background-color: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            padding: 18px;
-            margin-bottom: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .search-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-        .badge {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            margin-right: 8px;
-            margin-bottom: 8px;
-        }
-        .badge-high {
-            background-color: rgba(46, 204, 113, 0.15);
-            color: #2ecc71;
-            border: 1px solid rgba(46, 204, 113, 0.3);
-        }
-        .badge-medium {
-            background-color: rgba(241, 196, 15, 0.15);
-            color: #f1c40f;
-            border: 1px solid rgba(241, 196, 15, 0.3);
-        }
-        .badge-location {
-            background-color: rgba(52, 152, 219, 0.15);
-            color: #3498db;
-            border: 1px solid rgba(52, 152, 219, 0.3);
-        }
-        .snippet {
-            font-size: 0.95rem;
-            color: #bdc3c7;
-            margin: 10px 0;
-            line-height: 1.5;
-            background-color: rgba(0, 0, 0, 0.2);
-            padding: 10px 14px;
-            border-left: 3px solid #3498db;
-            border-radius: 4px;
-        }
-        .contact-info {
-            font-size: 0.9rem;
-            color: #ecf0f1;
-            display: flex;
-            align-items: center;
-            margin-top: 8px;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-
+    table_data = []
     for row in rows:
-        reliability = row.get("reliability", "Medium")
-        reliability_class = "badge-high" if "high" in reliability.lower() or "trusted" in reliability.lower() else "badge-medium"
+        table_data.append({
+            "Vendor / Source": row.get("vendor_or_source", "Unknown"),
+            "Website": row.get("url", ""),
+            "Phone Number": row.get("contact_numbers_found", "Not found"),
+            "Reliability": row.get("reliability", "Medium"),
+            "Details / Snippet": row.get("snippet", "")
+        })
         
-        title_text = row.get('title', 'Supplier Source')
-        url = row.get('url', '')
-        if url:
-            title_html = f"<a href='{url}' target='_blank' style='text-decoration: none; color: #1ad1d7; font-size: 1.15rem; font-weight: bold;'>🔗 {title_text}</a>"
-        else:
-            title_html = f"<span style='color: #ecf0f1; font-size: 1.15rem; font-weight: bold;'>📍 {title_text}</span>"
-            
-        location = row.get("location", "Not specified")
-        contacts = row.get("contact_numbers_found", "Not found in search result")
-        snippet = row.get("snippet", "")
-        
-        contact_display = f"<span style='color: #2ecc71; font-weight: 600;'>📞 {contacts}</span>" if contacts != "Not found in search result" else f"<span style='color: #95a5a6;'>📞 {contacts}</span>"
-        
-        st.markdown(
-            f"""
-            <div class="search-card">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap;">
-                    <div style="margin-bottom: 8px;">{title_html}</div>
-                    <div>
-                        <span class="badge {reliability_class}">🛡️ {reliability}</span>
-                        <span class="badge badge-location">📍 {location}</span>
-                    </div>
-                </div>
-                <div class="snippet">"{snippet}"</div>
-                <div class="contact-info">{contact_display}</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+    df = pd.DataFrame(table_data)
+    st.dataframe(
+        df,
+        column_config={
+            "Website": st.column_config.LinkColumn("Website"),
+            "Details / Snippet": st.column_config.TextColumn("Details / Snippet", width="large")
+        },
+        use_container_width=True,
+        hide_index=True
+    )
 
 
 def render_cost_rows(rows: list[dict]) -> None:
@@ -1615,13 +1593,6 @@ quantity = st.number_input(
     value=100
 )
 
-enable_web_search = st.checkbox(
-    "🌐 Enable Web Search / Live Vendor Finding",
-    key="enable_web_search",
-    value=False,
-    help="Bypass local calculations and query the web directly (DuckDuckGo + Tavily fallback) to find new suppliers, rates, contacts, or industry benchmarks."
-)
-
 current_calculation_context = (
     tuple(uploaded_file.name for uploaded_file in uploaded_files or []),
     quantity,
@@ -1674,6 +1645,13 @@ for result in st.session_state["calculation_results"]:
     )
 
 st.subheader("Agent Chat")
+
+enable_web_search = st.checkbox(
+    "🌐 Enable Web Search / Live Vendor Finding",
+    key="enable_web_search",
+    value=False,
+    help="Bypass local calculations and query the web directly (DuckDuckGo + Tavily fallback) to find new suppliers, rates, contacts, or industry benchmarks."
+)
 
 for message in st.session_state["chat_history"]:
     with st.chat_message(message["role"]):

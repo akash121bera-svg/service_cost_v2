@@ -18,6 +18,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_classic.chains import LLMChain
 
 from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 from rag.vector_store import create_vector_store
 
@@ -44,10 +45,27 @@ Answer the rephrased question based on the context, chat history, and determinis
 
 
 def get_llm():
-    return ChatGroq(
-        model="llama-3.2-90b-vision-preview",
+    google_key = os.environ.get("GOOGLE_API_KEY")
+    gemini_model = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
+    
+    groq_llm = ChatGroq(
+        model="llama-3.3-70b-versatile",
         temperature=0,
     )
+    
+    if google_key and "your_" not in google_key:
+        try:
+            gemini_llm = ChatGoogleGenerativeAI(
+                model=gemini_model,
+                temperature=0,
+                google_api_key=google_key,
+                max_retries=1,
+            )
+            return gemini_llm.with_fallbacks([groq_llm])
+        except Exception:
+            return groq_llm
+            
+    return groq_llm
 
 
 def chunk_text(text, chunk_size=900, overlap=120):
